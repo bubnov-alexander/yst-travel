@@ -3,6 +3,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
+from aiogram.types import InputFile
 from dotenv import load_dotenv
 
 import os
@@ -10,7 +11,7 @@ import datetime as dt
 import pytz
 import time as tm
 
-
+from app import exsel
 from app import migration
 from app import keyboard as kb
 import datetime as dt
@@ -36,10 +37,11 @@ async def on_startup(_):
 
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
-    if message.from_user.id != migration.get_user_id(message.from_user.id):
-        await message.answer('Вы авторизовались как администратор!', reply_markup=kb.main)
-    else:
-        return
+    user_id = migration.get_user_id()
+    for i in user_id:
+        if i == message.chat.id:
+            await message.answer('Приветствую, администратор', reply_markup=kb.main)
+            return
 
 @dp.message_handler(commands=['get_group_id'])
 async def get_group_id(message: types.Message):
@@ -73,7 +75,11 @@ async def prev_page(callback: types.CallbackQuery):
     elif is_month == True:
         month_number = int(callback.data.split("_")[4])
         orders = await migration.sort_date_order()
-        orders = [order for order in orders if int(order[5].split('.')[1]) == month_number]
+        filtered_orders = []
+        for order in orders:
+            if int(order[5].split('.')[1]) == month_number:
+                filtered_orders.append(order)
+        orders = filtered_orders
     else:
         orders = await migration.get_orders()
 
@@ -100,7 +106,12 @@ async def next_page(callback: types.CallbackQuery):
     elif is_month == True:
         month_number = int(callback.data.split("_")[4])
         orders = await migration.sort_date_order()
-        orders = [order for order in orders if int(order[5].split('.')[1]) == month_number]
+        filtered_orders = []
+        for order in orders:
+            print(order[1])
+            if int(order[1].split('.')[1]) == month_number:
+                filtered_orders.append(order)
+        print(filtered_orders)
     else:
         orders = await migration.get_orders()
     
@@ -177,6 +188,17 @@ async def sort_by_month(callback: types.CallbackQuery):
 async def close_callback(callback: types.CallbackQuery):
     await bot.edit_message_text(chat_id=callback.message.chat.id, message_id=callback.message.message_id, text='Выбери что хочешь сделать', reply_markup=kb.main, parse_mode='Markdown')
 
+@dp.callback_query_handler(text='exsel')
+async def send_exsel(callback: types.CallbackQuery):
+    db_path = 'data/database.db'
+    excel_path = 'data/catamaran_data.xlsx'
+    
+    exsel.export_sql_to_excel(db_path, excel_path)
+
+    file = InputFile(excel_path)
+    await bot.send_document(callback.from_user.id, file)
+
+    os.remove(excel_path)  # Удаляем файл после отправки
 
 # ============== FSM Machne ==============
 
@@ -208,6 +230,10 @@ class my_fsm(StatesGroup):
 
     search_order_by_date = State()
 
+    status_order = State()
+
+    search_free_orders = State()
+
 # ============== Add order ==============
 
 @dp.callback_query_handler(text='add_order')
@@ -238,12 +264,13 @@ async def save_date_end(message: types.Message, state: FSMContext):
                 data['date_end'] = dt.datetime.strptime(message.text, '%d.%m.%Y').strftime('%d.%m.%Y')
             check = await migration.check_availability(data['date_start'], data['date_end'], 1)
             if check[0] == True:
-                await bot.send_message(chat_id=message.chat.id, text='📈 Напиши "Количество катамаранов"', reply_markup=kb.close2)
+                await bot.send_message(chat_id=message.chat.id, text=f'📈 Напиши "Количество катамаранов" Свободно: {check[1]}', reply_markup=kb.close2)
                 await my_fsm.next()
             else:
                 await message.answer(f'Недостаточно катамаранов на выбранные даты. Свободных мест: 0', reply_markup=kb.main)
                 await state.finish()
-        except:
+        except Exception as e:
+            print(e)
             await message.answer('Дата должна быть в формате ДД.ММ.ГГ', reply_markup=kb.close2)
     
 @dp.message_handler(state=my_fsm.add_quantity)
@@ -300,11 +327,14 @@ async def save_price(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.add_additional_wishes)
 async def save_additional_wishes(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['additional_wishes'] = message.text
+        if message.text.lower() == 'пропустить':
+            data['additional_wishes'] = ''
+        else:
+            data['additional_wishes'] = message.text
 
         # Добавление бронирования
         booking_successful = migration.add_booking(data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'])
-        info_text = await kb.info_text(booking_successful, data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'])
+        info_text = await kb.info_text(booking_successful, data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'], status = 0)
         if booking_successful:
             await message.answer('Бронирование успешно добавлено.', reply_markup=kb.main)
             await bot.send_message(chat_id=CHAT_ID, text=f"Новое бронирование: {info_text}")
@@ -360,7 +390,7 @@ async def edit_order_by_id(message: types.Message, state: FSMContext):
             data['price'] = order[8]
             data['additional_wishes'] = order[9]
 
-        text = await kb.info_text(order_id, data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'])
+        text = await kb.info_text(order_id, data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'], order[10])
         await bot.send_message(chat_id=message.chat.id, text=text, reply_markup=kb.close3)
         await bot.send_message(chat_id=message.chat.id, text='🟢 Напиши "Дату приезда"', reply_markup=kb.close3)
     else:
@@ -370,7 +400,12 @@ async def edit_order_by_id(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.edit_date_start)
 async def edit_date_start(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text.lower() == 'пропустить':
+        if message.text.lower() == 'отменить':
+            await message.answer('Отменено', reply_markup=kb.main)
+            await state.finish()
+
+
+        elif message.text.lower() == 'пропустить':
             await bot.send_message(chat_id=message.chat.id, text='🔴 Напиши "Дату выезда"', reply_markup=kb.close3)
             await my_fsm.next()
         else:
@@ -387,7 +422,11 @@ async def edit_date_start(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.edit_date_end)
 async def edit_date_end(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text.lower() == 'пропустить':
+        if message.text.lower() == 'отменить':
+            await message.answer('Отменено', reply_markup=kb.main)
+            await state.finish()
+
+        elif message.text.lower() == 'пропустить':
             await bot.send_message(chat_id=message.chat.id, text='📈 Напиши "Количество катамаранов"', reply_markup=kb.close3)
             await my_fsm.next()
         else:
@@ -411,7 +450,11 @@ async def edit_date_end(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.edit_quantity)
 async def edit_quantity(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text.lower() == 'пропустить':
+        if message.text.lower() == 'отменить':
+            await message.answer('Отменено', reply_markup=kb.main)
+            await state.finish()
+
+        elif message.text.lower() == 'пропустить':
             await bot.send_message(chat_id=message.chat.id, text='⏰️ Напиши "Время приезда"', reply_markup=kb.close3)
             await my_fsm.next()
         else:
@@ -429,7 +472,10 @@ async def edit_quantity(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.edit_time_start)
 async def edit_time_start(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text.lower() == 'пропустить':
+        if message.text.lower() == 'отменить':
+            await message.answer('Отменено', reply_markup=kb.main)
+            await state.finish()
+        elif message.text.lower() == 'пропустить':
             pass
         else:
             data['time_start'] = message.text
@@ -440,7 +486,10 @@ async def edit_time_start(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.edit_route)
 async def edit_route(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text.lower() == 'пропустить':
+        if message.text.lower() == 'отменить':
+            await message.answer('Отменено', reply_markup=kb.main)
+            await state.finish()
+        elif message.text.lower() == 'пропустить':
             pass
         else:
             data['route'] = (message.text)
@@ -450,7 +499,10 @@ async def edit_route(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.edit_customer_name)
 async def edit_customer_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text.lower() == 'пропустить':
+        if message.text.lower() == 'отменить':
+            await message.answer('Отменено', reply_markup=kb.main)
+            await state.finish()
+        elif message.text.lower() == 'пропустить':
             pass
         else:
             data['customer_name'] = message.text
@@ -460,7 +512,10 @@ async def edit_customer_name(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.edit_phone_number)
 async def edit_phone_number(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text.lower() == 'пропустить':
+        if message.text.lower() == 'отменить':
+            await message.answer('Отменено', reply_markup=kb.main)
+            await state.finish()
+        elif message.text.lower() == 'пропустить':
             pass
         else:
             data['phone_number'] = message.text
@@ -470,7 +525,10 @@ async def edit_phone_number(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.edit_price)
 async def edit_price(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text.lower() == 'пропустить':
+        if message.text.lower() == 'отменить':
+            await message.answer('Отменено', reply_markup=kb.main)
+            await state.finish()
+        elif message.text.lower() == 'пропустить':
             await bot.send_message(chat_id=message.chat.id, text='📝 Напиши "Дополнительные пожелания"', reply_markup=kb.close3)
             await my_fsm.next()
         else:
@@ -485,17 +543,19 @@ async def edit_price(message: types.Message, state: FSMContext):
 @dp.message_handler(state=my_fsm.edit_additional_wishes)
 async def edit_additional_wishes(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text.lower() == 'пропустить':
+        if message.text.lower() == 'отменить':
+            await message.answer('Отменено', reply_markup=kb.main)
+            await state.finish()
+        elif message.text.lower() == 'пропустить':
             pass
         else:
             data['additional_wishes'] = message.text
 
         # Изменение заказа
         order_id = data['order_id']
-        text = await kb.info_text(order_id, data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'])
+        text = await kb.info_text(order_id, data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'], status=0)
         await migration.edit_order(data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'], order_id)
         await message.answer('Бронирование успешно изменено.', reply_markup=kb.main)
-        await bot.send_message(chat_id=CHAT_ID, text=f"Измененное бронирование: {text}")
 
         await state.finish()
 
@@ -517,7 +577,7 @@ async def search_order_by_id(message: types.Message, state: FSMContext):
             
     order = await migration.get_order_by_id(order_id)
     if order:
-        text = await kb.info_text(order[0], order[1], order[2], order[3], order[4], order[5], order[6], order[7], order[8], order[9])
+        text = await kb.info_text(order[0], order[1], order[2], order[3], order[4], order[5], order[6], order[7], order[8], order[9], order[10])
         await bot.send_message(chat_id=message.chat.id, text=text, reply_markup=kb.main)
     else:
         await bot.send_message(chat_id=message.chat.id, text=f'Заказ с ID {order_id} не найден', reply_markup=kb.main)
@@ -543,10 +603,55 @@ async def process_order_search(message: types.Message, state: FSMContext):
         db_date = await migration.get_order_by_date(date)
         if db_date:
             for i in db_date:
-                text = await kb.info_text(i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9])
+                text = await kb.info_text(i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10])
                 await message.answer(text, reply_markup=kb.main)
         else:
             await message.answer('Заказ не найден.', reply_markup=kb.sort_orders)
+    except Exception as e:
+        print(e)
+        await message.answer('Дата должна быть в формате ДД.ММ.ГГ', reply_markup=kb.close2)
+
+    await state.finish()
+
+# ============== Chenge Status ==============
+
+@dp.callback_query_handler(text='status_order')
+async def status_order(callback: types.CallbackQuery):
+    await my_fsm.status_order.set()
+    await bot.edit_message_text(chat_id=callback.message.chat.id, message_id=callback.message.message_id, text='Введите ID заказа, который хотите изменить', reply_markup=kb.close2)
+
+@dp.message_handler(state=my_fsm.status_order)
+async def status_order_by_id(message: types.Message, state: FSMContext):
+    order_id = message.text
+    order = await migration.get_order_by_id(order_id)
+    if order:
+        await migration.status_order(order_id)
+        await bot.send_message(chat_id=message.chat.id, text=f'Статус заказа с ID {order_id} изменен', reply_markup=kb.main)
+    else:
+        await bot.send_message(chat_id=message.chat.id, text=f'Заказ с ID {order_id} не найден', reply_markup=kb.main)
+    await state.finish()
+
+# ============== Search free orders ==============
+@dp.callback_query_handler(text='search_free_order')
+async def search_free_orders(callback: types.CallbackQuery):
+    await my_fsm.search_free_orders.set()
+    await bot.edit_message_text(chat_id=callback.message.chat.id, message_id=callback.message.message_id, text='🟢 Напиши дату, на которую хочешь найти свободные заказы:', reply_markup=kb.close2)
+
+@dp.message_handler(state=my_fsm.search_free_orders)
+async def process_free_orders_search(message: types.Message, state: FSMContext):
+    date = message.text
+
+    try:
+        try:
+            date = dt.datetime.strptime(date, '%d.%m.%y').strftime('%d.%m.%Y')
+        except:
+            date = dt.datetime.strptime(date, '%d.%m.%Y').strftime('%d.%m.%Y')
+
+        db_date = await migration.get_available_catamarans(date)
+        if db_date:
+            await message.answer(text= f'Свободных мест на эту дату {db_date}', reply_markup=kb.main)
+        else:
+            await message.answer('Свободных заказов не найдено.', reply_markup=kb.main)
     except Exception as e:
         print(e)
         await message.answer('Дата должна быть в формате ДД.ММ.ГГ', reply_markup=kb.close2)
