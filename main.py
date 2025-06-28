@@ -13,6 +13,7 @@ import time as tm
 
 from app import exsel
 from app import migration
+from app.Models import catamaran
 from app import keyboard as kb
 import datetime as dt
 
@@ -37,7 +38,7 @@ async def on_startup(_):
 
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
-    user_id = migration.get_user_id()
+    user_id = user.get_user_id()
     for i in user_id:
         if i == message.chat.id:
             await message.answer('Приветствую, администратор', reply_markup=kb.main)
