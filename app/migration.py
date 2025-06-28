@@ -108,7 +108,7 @@ async def check_availability(date_start, date_end, requested_quantity, order_id=
     # Извлечение всех бронирований
     cursor.execute("SELECT date_start, date_end, quantity FROM catamaran")
     bookings = cursor.fetchall()
-    total_catamarans = 12
+    total_catamarans = 16
     
     requested_start = datetime.datetime.strptime(date_start, '%d.%m.%Y')
     requested_end = datetime.datetime.strptime(date_end, '%d.%m.%Y') + datetime.timedelta(days=1)
@@ -145,7 +145,7 @@ async def get_available_catamarans(date):
     # Извлечение всех бронирований
     cursor.execute("SELECT date_start, date_end, quantity FROM catamaran")
     bookings = cursor.fetchall()
-    total_catamarans = 12
+    total_catamarans = 16
     
     requested_date = datetime.datetime.strptime(date, '%d.%m.%Y')
     
