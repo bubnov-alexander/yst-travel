@@ -7,8 +7,8 @@ import os
 
 
 main = InlineKeyboardMarkup(row_width=3)
-main.add(InlineKeyboardButton(text = "Добавть заказ", callback_data = "add_order"),
-        InlineKeyboardButton(text = "Просмотр заказов", callback_data = "view_orders"),
+main.add(InlineKeyboardButton(text = "Добавить заказ", callback_data = "add_order"),
+        InlineKeyboardButton(text = "Просмотр заказов", callback_data = "view_catamarans"),
         InlineKeyboardButton(text = "Удалить заказ", callback_data = "delete_order"),
         InlineKeyboardButton(text = "Изменить заказ", callback_data = "edit_order"),
         InlineKeyboardButton(text = "Поиск заказов", callback_data = "search_order"),

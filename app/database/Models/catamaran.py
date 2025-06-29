@@ -1,7 +1,7 @@
 import sqlite3, datetime
 
 async def add_order(date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes):
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
     cursor.execute("INSERT INTO catamaran (date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes)),
@@ -12,7 +12,7 @@ async def add_order(date_start, date_end, time_start, route, quantity, customer_
     return order_id
 
 async def get_orders():
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
     cursor.execute("SELECT * FROM catamaran")
@@ -21,7 +21,7 @@ async def get_orders():
     return orders
 
 async def delete_order(order_id):
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
     cursor.execute("DELETE FROM catamaran WHERE id = ?", (order_id,))
@@ -29,7 +29,7 @@ async def delete_order(order_id):
     print("Заказ успешно удален")
 
 async def edit_order(date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes, order_id):
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
     cursor.execute("UPDATE catamaran SET date_start = ?, date_end = ?, time_start = ?, route = ?, quantity = ?, customer_name = ?, phone_number = ?, price = ?, additional_wishes = ? WHERE id = ?", (date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes, order_id))
@@ -37,7 +37,7 @@ async def edit_order(date_start, date_end, time_start, route, quantity, customer
     print("Заказ успешно изменен")
 
 async def get_order_by_id(order_id):
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
     cursor.execute("SELECT * FROM catamaran WHERE id = ?", (order_id,))
@@ -47,7 +47,7 @@ async def get_order_by_id(order_id):
 
 def add_booking(date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes, status=0):
     # Преобразуем даты и время в объекты datetime
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
     cursor.execute("INSERT INTO catamaran (date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes, status))
     database.commit()
@@ -57,7 +57,7 @@ def add_booking(date_start, date_end, time_start, route, quantity, customer_name
 
 async def check_availability(date_start, date_end, requested_quantity, order_id=None):
     # Подключение к базе данных
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
     
     # Извлечение всех бронирований
@@ -94,7 +94,7 @@ async def check_availability(date_start, date_end, requested_quantity, order_id=
 
 async def get_available_catamarans(date):
     # Подключение к базе данных
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
     
     # Извлечение всех бронирований
@@ -115,7 +115,7 @@ async def get_available_catamarans(date):
     return availability
 
 async def sort_date_order():
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
     # Извлекаем данные без сортировки
@@ -128,7 +128,7 @@ async def sort_date_order():
     return orders_sorted
 
 async def get_order_by_date(date):
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
     cursor.execute("SELECT * FROM catamaran WHERE date_start = ?", (date,))
@@ -137,7 +137,7 @@ async def get_order_by_date(date):
     return orders
 
 async def status_order(order_id):
-    database = sqlite3.connect('data/database.db', check_same_thread=False, timeout=7)
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
     cursor.execute("UPDATE catamaran SET status = NOT status WHERE id = ?", (order_id,))

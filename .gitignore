@@ -5,7 +5,15 @@
 *.db
 .env
 
-
 # По желанию, можно игнорировать скомпилированные файлы Python
 *.pyc
 __pycache__/
+/.idea/.gitignore
+/app/storage/logs/bot.log
+/.idea/dataSources.xml
+/.idea/material_theme_project_new.xml
+/.idea/misc.xml
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/dictionaries/project.xml
+/.idea/sqldialects.xml
+/.idea/vcs.xml
