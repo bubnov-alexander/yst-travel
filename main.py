@@ -14,10 +14,11 @@ import time as tm
 from app import exsel
 from app import migration
 from app.Models import catamaran
+from app.Models import user
 from app import keyboard as kb
 import datetime as dt
 
-# ============== Setings ==============
+# ============== Settings ==============
 
 tz = pytz.timezone('Asia/Yekaterinburg')
 
@@ -54,7 +55,7 @@ async def get_group_id(message: types.Message):
 @dp.callback_query_handler(text='view_orders')
 async def view_orders(callback: types.CallbackQuery):
     page = 1
-    orders = await migration.get_orders()
+    orders = await catamaran.get_orders()
     total_pages = (len(orders) + 4) // 5 
     start_index = (page - 1) * 5
     end_index = start_index + 5
@@ -72,17 +73,17 @@ async def prev_page(callback: types.CallbackQuery):
     month_number = 0
 
     if is_sorted == True:        
-        orders = await migration.sort_date_order()
+        orders = await catamaran.sort_date_order()
     elif is_month == True:
         month_number = int(callback.data.split("_")[4])
-        orders = await migration.sort_date_order()
+        orders = await catamaran.sort_date_order()
         filtered_orders = []
         for order in orders:
             if int(order[5].split('.')[1]) == month_number:
                 filtered_orders.append(order)
         orders = filtered_orders
     else:
-        orders = await migration.get_orders()
+        orders = await catamaran.get_orders()
 
 
     total_pages = (len(orders) + 4) // 5
@@ -103,10 +104,10 @@ async def next_page(callback: types.CallbackQuery):
     month_number = 0
 
     if is_sorted == True:        
-        orders = await migration.sort_date_order()
+        orders = await catamaran.sort_date_order()
     elif is_month == True:
         month_number = int(callback.data.split("_")[4])
-        orders = await migration.sort_date_order()
+        orders = await catamaran.sort_date_order()
         filtered_orders = []
         for order in orders:
             print(order[1])
@@ -114,7 +115,7 @@ async def next_page(callback: types.CallbackQuery):
                 filtered_orders.append(order)
         print(filtered_orders)
     else:
-        orders = await migration.get_orders()
+        orders = await catamaran.get_orders()
     
     total_pages = (len(orders) + 4) // 5
     page += 1
@@ -129,7 +130,7 @@ async def next_page(callback: types.CallbackQuery):
 @dp.callback_query_handler(text='sort_date_order')
 async def sort_date_order(callback: types.CallbackQuery):
     page = 1
-    orders = await migration.sort_date_order()
+    orders = await catamaran.sort_date_order()
     total_pages = (len(orders) + 4) // 5  # Calculate total number of pages
     start_index = (page - 1) * 5
     end_index = start_index + 5
@@ -152,7 +153,7 @@ async def search_order(callback: types.CallbackQuery):
 @dp.callback_query_handler(lambda callback: callback.data.startswith('sort_by_'))
 async def sort_by_month(callback: types.CallbackQuery):
     page = 1
-    orders = await migration.get_orders()
+    orders = await catamaran.get_orders()
 
     month = callback.data.split('_')[2]
     month_number = None
@@ -175,7 +176,7 @@ async def sort_by_month(callback: types.CallbackQuery):
             await bot.edit_message_text(chat_id=callback.message.chat.id, message_id=callback.message.message_id, text='В этом месяце нет заказов', reply_markup=kb.main)
         else:
             page = 1
-            orders = await migration.sort_date_order()
+            orders = await catamaran.sort_date_order()
             orders = [order for order in orders if int(order[1].split('.')[1]) == month_number]
             total_pages = (len(orders) + 4) // 5 
             start_index = (page - 1) * 5
@@ -263,7 +264,7 @@ async def save_date_end(message: types.Message, state: FSMContext):
                 data['date_end'] = dt.datetime.strptime(message.text, '%d.%m.%y').strftime('%d.%m.%Y')
             except:
                 data['date_end'] = dt.datetime.strptime(message.text, '%d.%m.%Y').strftime('%d.%m.%Y')
-            check = await migration.check_availability(data['date_start'], data['date_end'], 1)
+            check = await catamaran.check_availability(data['date_start'], data['date_end'], 1)
             if check[0] == True:
                 await bot.send_message(chat_id=message.chat.id, text=f'📈 Напиши "Количество катамаранов" Свободно: {check[1]}', reply_markup=kb.close2)
                 await my_fsm.next()
@@ -280,7 +281,7 @@ async def save_quantity(message: types.Message, state: FSMContext):
         data['quantity'] = message.text
         print(data['quantity'])
 
-    check = await migration.check_availability(data['date_start'], data['date_end'], int(data['quantity']))
+    check = await catamaran.check_availability(data['date_start'], data['date_end'], int(data['quantity']))
 
     if check[0]:
         await bot.send_message(chat_id=message.chat.id, text='⏰️ Напиши "Время приезда"', reply_markup=kb.close2)
@@ -334,7 +335,7 @@ async def save_additional_wishes(message: types.Message, state: FSMContext):
             data['additional_wishes'] = message.text
 
         # Добавление бронирования
-        booking_successful = migration.add_booking(data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'])
+        booking_successful = catamaran.add_booking(data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'])
         info_text = await kb.info_text(booking_successful, data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'], status = 0)
         if booking_successful:
             await message.answer('Бронирование успешно добавлено.', reply_markup=kb.main)
@@ -354,9 +355,9 @@ async def delete_order(callback: types.CallbackQuery):
 @dp.message_handler(state=my_fsm.delete_order)
 async def delete_order_by_id(message: types.Message, state: FSMContext):
     order_id = message.text
-    order = await migration.get_order_by_id(order_id)
+    order = await catamaran.get_order_by_id(order_id)
     if order:
-        await migration.delete_order(order_id)
+        await catamaran.delete_order(order_id)
         await bot.send_message(chat_id=message.chat.id, text=f'Заказ с ID {order_id} удален', reply_markup=kb.main)
     else:
         await bot.send_message(chat_id=message.chat.id, text=f'Заказ с ID {order_id} не найден', reply_markup=kb.main)
@@ -373,7 +374,7 @@ async def edit_order(callback: types.CallbackQuery):
 @dp.message_handler(state=my_fsm.edit_order)
 async def edit_order_by_id(message: types.Message, state: FSMContext):
     order_id = message.text
-    order = await migration.get_order_by_id(order_id)
+    order = await catamaran.get_order_by_id(order_id)
     if order:
         await my_fsm.edit_date_start.set()
         await state.update_data(order_id=order_id)
@@ -437,7 +438,7 @@ async def edit_date_end(message: types.Message, state: FSMContext):
                 except:
                     data['date_end'] = dt.datetime.strptime(message.text, '%d.%m.%Y').strftime('%d.%m.%Y')
 
-                check = await migration.check_availability(data['date_start'], data['date_end'], 1, data['order_id'])
+                check = await catamaran.check_availability(data['date_start'], data['date_end'], 1, data['order_id'])
                 if check[0] == True:
                     await bot.send_message(chat_id=message.chat.id, text='📈 Напиши "Количество катамаранов"', reply_markup=kb.close3)
                     await my_fsm.next()
@@ -461,7 +462,7 @@ async def edit_quantity(message: types.Message, state: FSMContext):
         else:
             data['quantity'] = message.text
 
-            check = await migration.check_availability(data['date_start'], data['date_end'], int(data['quantity']), data['order_id'])
+            check = await catamaran.check_availability(data['date_start'], data['date_end'], int(data['quantity']), data['order_id'])
 
             if check[0]:
                 await bot.send_message(chat_id=message.chat.id, text='⏰️ Напиши "Время приезда"', reply_markup=kb.close3)
@@ -537,7 +538,7 @@ async def edit_price(message: types.Message, state: FSMContext):
                 try:
                     data['price'] = int(message.text)
                 except:
-                    bot.send_message(chat_id=message.chat.id, text='Цена должна быть числом', reply_markup=kb.close3)
+                    await bot.send_message(chat_id=message.chat.id, text='Цена должна быть числом', reply_markup=kb.close3)
             await bot.send_message(chat_id=message.chat.id, text='📝 Напиши "Дополнительные пожелания"', reply_markup=kb.close3)
             await my_fsm.next()
 
@@ -555,7 +556,7 @@ async def edit_additional_wishes(message: types.Message, state: FSMContext):
         # Изменение заказа
         order_id = data['order_id']
         text = await kb.info_text(order_id, data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'], status=0)
-        await migration.edit_order(data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'], order_id)
+        await catamaran.edit_order(data['date_start'], data['date_end'], data['time_start'], data['route'], data['quantity'], data['customer_name'], data['phone_number'], data['price'], data['additional_wishes'], order_id)
         await message.answer('Бронирование успешно изменено.', reply_markup=kb.main)
 
         await state.finish()
@@ -576,7 +577,7 @@ async def search_order_by_id(message: types.Message, state: FSMContext):
             await bot.send_message(chat_id=message.chat.id, text='ID заказа должен быть числом', reply_markup=kb.main)
             await state.finish()
             
-    order = await migration.get_order_by_id(order_id)
+    order = await catamaran.get_order_by_id(order_id)
     if order:
         text = await kb.info_text(order[0], order[1], order[2], order[3], order[4], order[5], order[6], order[7], order[8], order[9], order[10])
         await bot.send_message(chat_id=message.chat.id, text=text, reply_markup=kb.main)
@@ -601,7 +602,7 @@ async def process_order_search(message: types.Message, state: FSMContext):
         except:
             date = dt.datetime.strptime(date, '%d.%m.%Y').strftime('%d.%m.%Y')
 
-        db_date = await migration.get_order_by_date(date)
+        db_date = await catamaran.get_order_by_date(date)
         if db_date:
             for i in db_date:
                 text = await kb.info_text(i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10])
@@ -624,9 +625,9 @@ async def status_order(callback: types.CallbackQuery):
 @dp.message_handler(state=my_fsm.status_order)
 async def status_order_by_id(message: types.Message, state: FSMContext):
     order_id = message.text
-    order = await migration.get_order_by_id(order_id)
+    order = await catamaran.get_order_by_id(order_id)
     if order:
-        await migration.status_order(order_id)
+        await catamaran.status_order(order_id)
         await bot.send_message(chat_id=message.chat.id, text=f'Статус заказа с ID {order_id} изменен', reply_markup=kb.main)
     else:
         await bot.send_message(chat_id=message.chat.id, text=f'Заказ с ID {order_id} не найден', reply_markup=kb.main)
@@ -648,7 +649,7 @@ async def process_free_orders_search(message: types.Message, state: FSMContext):
         except:
             date = dt.datetime.strptime(date, '%d.%m.%Y').strftime('%d.%m.%Y')
 
-        db_date = await migration.get_available_catamarans(date)
+        db_date = await catamaran.get_available_catamarans(date)
         if db_date:
             await message.answer(text= f'Свободных мест на эту дату {db_date}', reply_markup=kb.main)
         else:
