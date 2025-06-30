@@ -1,4 +1,3 @@
-import aiogram
 from aiogram import types
 from app import keyboard
 from app.database.Models import catamaran

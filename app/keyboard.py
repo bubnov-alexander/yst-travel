@@ -13,7 +13,7 @@ main.add(InlineKeyboardButton(text = "Добавить заказ", callback_dat
         InlineKeyboardButton(text = "Изменить заказ", callback_data = "edit_order"),
         InlineKeyboardButton(text = "Поиск заказов", callback_data = "search_order"),
         InlineKeyboardButton(text = "Поменять статус", callback_data = "status_order"))
-main.add(InlineKeyboardButton(text = 'Excel таблица', callback_data = 'exsel'))
+main.add(InlineKeyboardButton(text = 'Excel таблица', callback_data = 'excel'))
 
 sort_orders = InlineKeyboardMarkup(row_width=1)
 # sort_orders.add(InlineKeyboardButton(text = "По месяцам", callback_data = "sort_by_month"),
