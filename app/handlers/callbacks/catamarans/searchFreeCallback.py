@@ -33,7 +33,6 @@ def register_search_free_catamaran_handlers(dp, bot):
             else:
                 await message.answer('Свободных заказов не найдено.', reply_markup=kb.main)
         except Exception as e:
-            print(e)
             await message.answer('Дата должна быть в формате ДД.ММ.ГГ', reply_markup=kb.close2)
 
         await state.finish()

@@ -1,6 +1,7 @@
+from app.database.Migrations.route import create_routes_table, seed_routes
 from app.utils.logger import logger
 import sqlite3
-from app.database.Migrations.catamaran import create_catamaran_table
+from app.database.Migrations.catamaran import create_catamaran_orders_table
 from app.database.Migrations.admin import create_admin_table
 
 async def db_start():
@@ -9,7 +10,10 @@ async def db_start():
         cursor = db.cursor()
         logger.info("✅  Подключение к SQLite установлено")
 
-        create_catamaran_table(cursor)
+        seed_routes()
+        logger.info("🚢 Таблица route — готова ")
+
+        create_catamaran_orders_table(cursor)
         logger.info("🛶 Таблица catamaran — готова")
 
         create_admin_table(cursor)

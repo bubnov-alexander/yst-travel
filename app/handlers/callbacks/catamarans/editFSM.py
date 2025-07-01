@@ -108,7 +108,6 @@ def register_edit_catamaran_handlers(dp, bot):
                                              reply_markup=kb.main)
                         await state.finish()
                 except Exception as e:
-                    print(e)
                     await message.answer('Дата должна быть в формате ДД.ММ.ГГ', reply_markup=kb.close3)
 
     @dp.message_handler(state=EditOrderFSM.edit_quantity)

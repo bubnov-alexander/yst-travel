@@ -22,7 +22,8 @@ async def view_catamarans(callback: types.CallbackQuery):
             message_id=callback.message.message_id,
             text=orders_text,
             reply_markup=markup,
-            parse_mode='Markdown'
+            parse_mode='HTML',
+            disable_web_page_preview=True
         )
 
 

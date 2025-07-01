@@ -35,7 +35,6 @@ def register_find_order_by_date_handlers(dp, bot):
             else:
                 await message.answer('Заказ не найден.', reply_markup=kb.sort_orders)
         except Exception as e:
-            print(e)
             await message.answer('Дата должна быть в формате ДД.ММ.ГГ', reply_markup=kb.close2)
 
         await state.finish()

@@ -5,6 +5,7 @@ import time
 import datetime as dt
 import os
 
+from app.database.Models.route import get_route_by_id
 
 main = InlineKeyboardMarkup(row_width=3)
 main.add(InlineKeyboardButton(text = "Добавить заказ", callback_data = "add_order"),
@@ -56,26 +57,32 @@ close4.add(InlineKeyboardButton(text = '🔙Назад', callback_data = 'close_
 async def generate_orders_text_and_markup(orders_page, page, total_pages, is_sorted=False, is_month=False, month_number=0):
         orders_text = ""
         for order in orders_page:
-                orders_text += "📝 **Информация о заказе**\n"
+                route = get_route_by_id(order[5])
+                phone = order[8].replace('https://wa.me/', '')
+
+                orders_text += "📝 <b>Информация о заказе</b>\n"
                 orders_text += "━━━━━━━━━━━━━━━━━━━━\n\n"
-                orders_text += f"📌**ID заказа:** {str(order[0])}\n"
-                orders_text += f"⚡️**Дата приезда:** {str(order[1])}\n"
-                orders_text += f"⚡️**Дата выезда:** {str(order[2])}\n"
-                orders_text += f"⏰️**Время приезда:** {str(order[3])}\n"
-                orders_text += f"🗺**Маршрут:** {str(order[4])}\n"
-                orders_text += f"📈**Количество катамаранов:** {str(order[5])}\n"
-                orders_text += f"🤵**Имя:** {str(order[6])}\n"
-                orders_text += f"📞 **Номер телефона:** {str(order[7])}\n"
-                orders_text += f"💰**Цена заказа:** {str(order[8])}\n"
-                if order[9] == "" or order[9] == None or order[9] == " " or order[9] == '.': 
+                orders_text += f"📌 <b>ID заказа:</b> {order[0]}\n"
+                orders_text += f"⚡️ <b>Дата приезда:</b> {order[1]}\n"
+                orders_text += f"⏰️ <b>Время приезда:</b> {order[2]}\n"
+                orders_text += f"⚡️ <b>Дата выезда:</b> {order[3]}\n"
+                orders_text += f"⏰️ <b>Время выезда:</b> {order[4]}\n"
+                orders_text += f"🗺 <b>Маршрут:</b> {route['name']}\n"
+                orders_text += f"📈 <b>Количество катамаранов:</b> {order[6]}\n"
+                orders_text += f"🤵 <b>ФИО:</b> {order[7]}\n"
+                orders_text += f"📞 <b>Телефон:</b><a href='{order[8]}'> +{phone}</a>\n"
+                orders_text += f"💰 <b>Цена заказа:</b> {order[9]} ₽\n"
+
+                if order[10] == "" or order[10] is None or order[10] == " " or order[10] == '.':
                         orders_text += "\n"
                 else:
-                        orders_text += f"📗 **Дополнительные пожелания:** {str(order[9])}\n"
-                orders_text += "━━━━━━━━━━━━━━━━━━━━\n"
-                if order[10] == True:
-                        orders_text += "✅ **Статус:** Подтверждён!\n\n"
+                        orders_text +=  f"📗 <b>Дополнительные пожелания:</b> {order[10]}\n"
+                if order[11]:
+                        orders_text += "✅ <b>Статус:</b> Подтверждён!\n\n"
                 else:
-                        orders_text += "❌ **Статус:** Не подтверждён!\n\n"
+                        orders_text += "❌ <b>Статус:</b> Не подтверждён!\n\n"
+                orders_text += "━━━━━━━━━━━━━━━━━━━━\n"
+
 
         markup = InlineKeyboardMarkup(row_width=2)
         buttons = []
@@ -91,12 +98,12 @@ async def generate_orders_text_and_markup(orders_page, page, total_pages, is_sor
         return orders_text, markup
 
 async def info_text(date_id, date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes, status):
-        if status == True:
+        if status:
                 last_status = "✅ Статус: Подтверждён!"
         else:
                 last_status = "❌ Статус: Не подтверждён!"
 
-        if additional_wishes == "" or additional_wishes == None or additional_wishes == " " or additional_wishes == '.':
+        if additional_wishes == "" or additional_wishes is None or additional_wishes == " " or additional_wishes == '.':
                 last_wishes = "\n"
         else:
                 last_wishes = f"\n📗 Дополнительные пожелания: {additional_wishes}\n"

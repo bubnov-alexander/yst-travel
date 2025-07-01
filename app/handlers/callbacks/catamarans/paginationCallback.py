@@ -45,10 +45,8 @@ async def next_page(callback: types.CallbackQuery):
         orders = await catamaran.sort_date_order()
         filtered_orders = []
         for order in orders:
-            print(order[1])
             if int(order[1].split('.')[1]) == month_number:
                 filtered_orders.append(order)
-        print(filtered_orders)
     else:
         orders = await catamaran.get_orders()
 
