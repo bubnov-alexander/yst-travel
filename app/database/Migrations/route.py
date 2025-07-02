@@ -26,13 +26,21 @@ def seed_routes():
 
     for point_a, point_b in pairs:
         try:
+            # Проверяем, существует ли уже такой маршрут
             cursor.execute(
-                "INSERT OR IGNORE INTO routes (point_a, point_b) VALUES (?, ?)",
+                "SELECT 1 FROM routes WHERE point_a = ? AND point_b = ?",
                 (point_a, point_b)
             )
+            exists = cursor.fetchone()
+
+            if not exists:
+                cursor.execute(
+                    "INSERT INTO routes (point_a, point_b) VALUES (?, ?)",
+                    (point_a, point_b)
+                )
         except Exception as e:
             logger.error(f"Ошибка при добавлении маршрута {point_a} - {point_b}: {e}")
 
     database.commit()
     database.close()
-    logger.info("🚢 Все маршруты успешно добавлены")
+    logger.info("🚢 Все маршруты успешно обработаны")

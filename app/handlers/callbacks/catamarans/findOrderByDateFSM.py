@@ -16,25 +16,34 @@ def register_find_order_by_date_handlers(dp, bot):
                                     text='🟢 Напиши дату заказа который хочешь найти:', reply_markup=kb.close2)
         await FindOrderByDate.search_order_by_date.set()
 
-
     @dp.message_handler(state=FindOrderByDate.search_order_by_date)
     async def process_order_search(message: types.Message, state: FSMContext):
-        date = message.text
+        date_text = message.text.strip()
 
-        try:
+        for fmt in ('%d.%m.%Y', '%d.%m.%y'):
             try:
-                date = dt.datetime.strptime(date, '%d.%m.%y').strftime('%d.%m.%Y')
-            except:
-                date = dt.datetime.strptime(date, '%d.%m.%Y').strftime('%d.%m.%Y')
+                date = dt.datetime.strptime(date_text, fmt).strftime('%d.%m.%Y')
+                break
+            except ValueError:
+                date = None
 
-            db_date = await catamaran.get_order_by_date(date)
-            if db_date:
-                for i in db_date:
-                    text = await kb.info_text(i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10])
-                    await message.answer(text, reply_markup=kb.main)
-            else:
-                await message.answer('Заказ не найден.', reply_markup=kb.sort_orders)
-        except Exception as e:
-            await message.answer('Дата должна быть в формате ДД.ММ.ГГ', reply_markup=kb.close2)
+        if date is None:
+            await message.answer('❌ Дата должна быть в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ', reply_markup=kb.close2)
+            await state.finish()
+            return
+
+        db_date = await catamaran.get_order_by_date(date)
+        if db_date:
+            text = ''
+            for i in db_date:
+                text += await kb.info_text(i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11])
+            await message.answer(
+                text=text,
+                reply_markup=kb.back_to_search_order,
+                parse_mode = 'HTML',
+                disable_web_page_preview = True
+            )
+        else:
+            await message.answer('❌ Заказ не найден.', reply_markup=kb.sort_orders)
 
         await state.finish()

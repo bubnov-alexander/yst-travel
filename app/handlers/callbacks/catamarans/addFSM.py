@@ -237,18 +237,18 @@ def register_add_catamaran_handlers(dp, bot):
             )
 
             info_text = await kb.info_text(
-                date_id=booking_successful,
-                date_start=data['date_start'],
-                date_end=data['date_end'],
-                time_start=data['time_start'],
-                # data['time_end'],
-                route=data['route_id'],
+                order_id=booking_successful,
+                date_arrival=data['date_start'],
+                date_departure=data['date_end'],
+                time_arrival=data['time_start'],
+                time_departure=data['time_end'],
+                route_id=data['route_id'],
                 quantity=data['quantity'],
                 customer_name=data['customer_name'],
-                phone_number=data['customer_phone'],
+                phone_link=data['customer_phone'],
                 price=data['price'],
                 additional_wishes=data['additional_wishes'],
-                status=0
+                status=False
             )
 
             if booking_successful:

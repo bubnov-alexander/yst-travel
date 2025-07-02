@@ -1,30 +1,31 @@
 import sqlite3, datetime
 from app.utils.logger import logger
 
+
 async def add_order(
-    date_arrival, date_departure, time_arrival, time_departure,
-    route_id, quantity, customer_name, phone, price,
-    additional_wishes, prepayment_status
+        date_arrival, date_departure, time_arrival, time_departure,
+        route_id, quantity, customer_name, phone, price,
+        additional_wishes, prepayment_status
 ):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
     cursor.execute("""
-        INSERT INTO catamaran_orders (
-            date_arrival, date_departure, time_arrival, time_departure,
-            route_id, quantity, customer_name, phone, price,
-            additional_wishes, prepayment_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        date_arrival, date_departure, time_arrival, time_departure,
-        route_id, quantity, customer_name, phone, price,
-        additional_wishes, prepayment_status
-    ))
+                   INSERT INTO catamaran_orders (date_arrival, date_departure, time_arrival, time_departure,
+                                                 route_id, quantity, customer_name, phone, price,
+                                                 additional_wishes, prepayment_status)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   """, (
+                       date_arrival, date_departure, time_arrival, time_departure,
+                       route_id, quantity, customer_name, phone, price,
+                       additional_wishes, prepayment_status
+                   ))
 
     database.commit()
     order_id = cursor.lastrowid
     logger.info(f"Заказ создан: {order_id}")
     return order_id
+
 
 async def get_orders():
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
@@ -40,67 +41,77 @@ async def delete_order(order_id):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
-    cursor.execute("DELETE FROM catamaran WHERE id = ?", (order_id,))
+    cursor.execute("DELETE FROM catamaran_orders WHERE id = ?", (order_id,))
     database.commit()
     logger.info("Заказ успешно удален")
 
 
-async def edit_order(date_start, date_end, time_start, route, quantity, customer_name, phone_number, price,
-                     additional_wishes, order_id):
+async def edit_order(
+        date_arrival, date_departure, time_arrival, time_departure,
+        route_id, quantity, customer_name, phone, price,
+        additional_wishes, prepayment_status, order_id
+):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
-    cursor.execute(
-        "UPDATE catamaran SET date_start = ?, date_end = ?, time_start = ?, route = ?, quantity = ?, customer_name = ?, phone_number = ?, price = ?, additional_wishes = ? WHERE id = ?",
-        (date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes,
-         order_id))
+    cursor.execute("""
+                   UPDATE catamaran_orders
+                   SET date_arrival      = ?,
+                       date_departure    = ?,
+                       time_arrival      = ?,
+                       time_departure    = ?,
+                       route_id          = ?,
+                       quantity          = ?,
+                       customer_name     = ?,
+                       phone             = ?,
+                       price             = ?,
+                       additional_wishes = ?,
+                       prepayment_status = ?
+                   WHERE id = ?
+                   """, (
+                       date_arrival, date_departure, time_arrival, time_departure,
+                       route_id, quantity, customer_name, phone, price,
+                       additional_wishes, prepayment_status, order_id
+                   ))
+
     database.commit()
-    logger.info("Заказ успешно изменен")
+    database.close()
+
+    logger.info(f"📝 Заказ успешно изменён (ID: {order_id})")
 
 
 async def get_order_by_id(order_id):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
-    cursor.execute("SELECT * FROM catamaran WHERE id = ?", (order_id,))
+    cursor.execute("SELECT * FROM catamaran_orders WHERE id = ?", (order_id,))
     order = cursor.fetchone()
 
     return order
 
 
-def add_booking(date_start, date_end, time_start, route, quantity, customer_name, phone_number, price,
-                additional_wishes, status=0):
-    # Преобразуем даты и время в объекты datetime
-    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
-    cursor = database.cursor()
-    cursor.execute(
-        "INSERT INTO catamaran (date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (date_start, date_end, time_start, route, quantity, customer_name, phone_number, price, additional_wishes,
-         status))
-    database.commit()
-
-    order_id = cursor.lastrowid
-    return order_id
-
-
 async def check_availability(date_start, date_end, requested_quantity, order_id=None):
-    # Подключение к базе данных
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
-    # Извлечение всех бронирований
-    cursor.execute("SELECT date_start, date_end, quantity FROM catamaran")
+    cursor.execute("SELECT date_arrival, date_departure, quantity, id FROM catamaran_orders")
     bookings = cursor.fetchall()
+
     total_catamarans = 16
 
     requested_start = datetime.datetime.strptime(date_start, '%d.%m.%Y')
     requested_end = datetime.datetime.strptime(date_end, '%d.%m.%Y') + datetime.timedelta(days=1)
 
+    # Исключаем текущий заказ при редактировании
     if order_id:
-        cursor.execute("SELECT date_start, date_end, quantity FROM catamaran WHERE id = ?", (order_id,))
+        cursor.execute("SELECT date_arrival, date_departure, quantity, id FROM catamaran_orders WHERE id = ?",
+                       (order_id,))
         order = cursor.fetchone()
         if order:
-            bookings.remove(order)
+            try:
+                bookings.remove(order)
+            except ValueError:
+                logger.warning(f"Order with id={order_id} not found in bookings list.")
 
     availability = {}
 
@@ -118,28 +129,31 @@ async def check_availability(date_start, date_end, requested_quantity, order_id=
     can_book = all(availability[date] >= requested_quantity for date in availability)
     remaining_catamarans = min(availability[date] for date in availability)
 
+    database.close()
+
     return can_book, remaining_catamarans
 
 
 async def get_available_catamarans(date):
-    # Подключение к базе данных
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
-    # Извлечение всех бронирований
-    cursor.execute("SELECT date_start, date_end, quantity FROM catamaran")
+    cursor.execute("SELECT date_arrival, date_departure, quantity FROM catamaran_orders")
     bookings = cursor.fetchall()
-    total_catamarans = 16
 
+    total_catamarans = 16
     requested_date = datetime.datetime.strptime(date, '%d.%m.%Y')
 
     availability = total_catamarans
+
     for booking in bookings:
         booking_start = datetime.datetime.strptime(booking[0], '%d.%m.%Y')
         booking_end = datetime.datetime.strptime(booking[1], '%d.%m.%Y') + datetime.timedelta(days=1)
 
         if booking_start <= requested_date < booking_end:
             availability -= booking[2]
+
+    database.close()
 
     return availability
 
@@ -149,12 +163,11 @@ async def sort_date_order():
     cursor = database.cursor()
 
     # Извлекаем данные без сортировки
-    cursor.execute("SELECT * FROM catamaran")
+    cursor.execute("SELECT * FROM catamaran_orders")
     orders = cursor.fetchall()
 
-    # Преобразуем строки дат в объекты datetime и сортируем
-    orders_sorted = sorted(orders, key=lambda x: datetime.datetime.strptime(str(x[1]), '%d.%m.%Y') if isinstance(x[1],
-                                                                                                                 str) else datetime.datetime.now())
+    orders_sorted = sorted(orders, key=lambda x: datetime.datetime.strptime(str(x[1]), '%d.%m.%Y')
+    if isinstance(x[1],str) else datetime.datetime.now())
 
     return orders_sorted
 
@@ -163,7 +176,7 @@ async def get_order_by_date(date):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
-    cursor.execute("SELECT * FROM catamaran WHERE date_start = ?", (date,))
+    cursor.execute("SELECT * FROM catamaran_orders WHERE date_arrival = ?", (date,))
     orders = cursor.fetchall()
 
     return orders
@@ -173,10 +186,10 @@ async def status_order(order_id):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
-    cursor.execute("UPDATE catamaran SET status = NOT status WHERE id = ?", (order_id,))
+    cursor.execute("UPDATE catamaran_orders SET prepayment_status = NOT prepayment_status WHERE id = ?", (order_id,))
     database.commit()
 
-    cursor.execute("SELECT status FROM catamaran WHERE id = ?", (order_id,))
+    cursor.execute("SELECT prepayment_status FROM catamaran_orders WHERE id = ?", (order_id,))
     status = cursor.fetchone()
 
     return status[0]
