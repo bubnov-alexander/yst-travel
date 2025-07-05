@@ -84,10 +84,10 @@ async def get_order_by_id(order_id):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
-    cursor.execute("SELECT * FROM catamaran_orders WHERE id = ?", (order_id,))
-    order = cursor.fetchone()
+    cursor.execute("SELECT quantity FROM catamaran_services WHERE id = ?", (order_id,))
+    catamaran_row = cursor.fetchone()
 
-    return order
+    return catamaran_row
 
 
 async def check_availability(date_start, date_end, requested_quantity, order_id=None):

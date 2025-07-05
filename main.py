@@ -17,6 +17,7 @@ from app.handlers.callbacks.catamarans.sortByDateCallback import register_callba
 from app.handlers.callbacks.catamarans.viewCallback import register_callback_query_view_catamarans
 from app.handlers.callbacks.closeCallback import register_callback_close_handlers
 from app.handlers.callbacks.excelCallback import register_callback_query_excel
+from app.handlers.callbacks.orders.addFSM import register_add_order_handlers
 from app.handlers.callbacks.route.addNewRoute import register_add_route_handlers
 from app.handlers.commands.getChatIdCommand import register_handlers_get_group_id
 from app.utils.logger import logger
@@ -59,7 +60,9 @@ if __name__ == '__main__':
     register_callback_query_excel(dp)
     register_callback_close_handlers(dp, bot)
 
-    register_add_catamaran_handlers(dp, bot)
+    # register_add_catamaran_handlers(dp, bot)
+    register_add_order_handlers(dp, bot)
+
     register_edit_catamaran_handlers(dp, bot)
     register_delete_catamaran_handlers(dp, bot)
     register_change_status_catamaran_handlers(dp, bot)

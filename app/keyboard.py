@@ -99,10 +99,8 @@ async def info_text(
         date_departure: str,
         time_departure: str,
         route_id: str,
-        quantity: int,
         customer_name: str,
         phone_link: str,
-        price: float,
         additional_wishes: str = "",
         status: bool = False
 ):
@@ -128,10 +126,8 @@ async def info_text(
         f"⚡️ <b>Дата выезда:</b> {date_departure}\n"
         f"⏰️ <b>Время выезда:</b> {time_departure}\n"
         f"🗺 <b>Маршрут:</b> {route}\n"
-        f"📈 <b>Количество катамаранов:</b> {quantity}\n"
         f"🤵 <b>ФИО:</b> {customer_name}\n"
         f"📞 <b>Телефон:</b><a href='{phone}'> +{phone}</a>\n"
-        f"💰 <b>Цена заказа:</b> {price} ₽\n\n"
         f"{wishes_text}\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f"{status_text}\n\n"
