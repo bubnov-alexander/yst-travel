@@ -5,7 +5,6 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 import re
 import datetime as dt
 
-from app.database.Models import catamaran
 from app import keyboard as kb
 from app.database.Models.order import check_availability, add_new_order
 from app.utils.getRouteButton import get_points_a_keyboard, get_routes_keyboard_from_point_a
@@ -228,7 +227,7 @@ def register_add_order_handlers(dp, bot):
             )
 
             if booking_successful:
-                buttons = await kb.add_service_buttons(booking_successful)
+                buttons = await kb.service_buttons(booking_successful)
                 await message.answer(
                     text=f'Бронирование успешно добавлено. \n {info_text}',
                     reply_markup=buttons,
