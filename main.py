@@ -1,5 +1,6 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
 
 from app.handlers.callbacks.catamarans.addFSM import register_add_catamaran_handlers
 from app.handlers.callbacks.catamarans.changeStatusFSM import register_change_status_catamaran_handlers
@@ -18,6 +19,8 @@ from app.handlers.callbacks.catamarans.viewCallback import register_callback_que
 from app.handlers.callbacks.closeCallback import register_callback_close_handlers
 from app.handlers.callbacks.excelCallback import register_callback_query_excel
 from app.handlers.callbacks.orders.addFSM import register_add_order_handlers
+from app.handlers.callbacks.orders.serviceButtons import register_catamaran_callback, register_supboard_callback, \
+    register_transfer_callback
 from app.handlers.callbacks.route.SelectRoute import register_select_route_handler
 from app.handlers.callbacks.route.addNewRoute import register_add_route_handlers
 from app.handlers.commands.getChatIdCommand import register_handlers_get_group_id
@@ -29,6 +32,7 @@ from app.database.Migrations import migration
 import datetime as dt
 
 from app.handlers.commands.startCommand import register_handlers_start
+from app.utils.middleware import CallbackLoggerMiddleware, MessageLoggerMiddleware
 
 from config import TOKEN, TIMEZONE, CHAT_ID
 
@@ -62,6 +66,10 @@ if __name__ == '__main__':
     register_callback_close_handlers(dp, bot)
     register_select_route_handler(dp)
 
+    register_catamaran_callback(dp)
+    register_supboard_callback(dp)
+    register_transfer_callback(dp)
+
     # register_add_catamaran_handlers(dp, bot)
     register_add_order_handlers(dp, bot)
 
@@ -72,5 +80,8 @@ if __name__ == '__main__':
     register_find_order_by_id_handlers(dp, bot)
     register_find_order_by_date_handlers(dp, bot)
     register_add_route_handlers(dp, bot)
+
+    dp.middleware.setup(CallbackLoggerMiddleware())
+    dp.middleware.setup(MessageLoggerMiddleware())
 
     executor.start_polling(dp, on_startup=on_startup, skip_updates=True)

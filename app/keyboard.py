@@ -16,13 +16,13 @@ back_to_search_order.add(InlineKeyboardButton(text='🔙Назад', callback_da
 sort_orders = InlineKeyboardMarkup(row_width=1)
 sort_orders.add(
     InlineKeyboardButton(text="Все заказы", callback_data="view_catamarans"),
-        InlineKeyboardButton(text="Сортировка по дате", callback_data="sort_date_order"),
-        InlineKeyboardButton(text="Выбор заказав в определённом месяце", callback_data="sort_month_order"),
-        InlineKeyboardButton(text="Поиск по ID", callback_data="search_id_order"),
-        InlineKeyboardButton(text="Поиск по дате", callback_data="search_date_order"),
-        InlineKeyboardButton(text="Свободных мест по дате", callback_data="search_free_order"),
-        InlineKeyboardButton(text="🔙Назад", callback_data="close_callback")
-    )
+    InlineKeyboardButton(text="Сортировка по дате", callback_data="sort_date_order"),
+    InlineKeyboardButton(text="Выбор заказав в определённом месяце", callback_data="sort_month_order"),
+    InlineKeyboardButton(text="Поиск по ID", callback_data="search_id_order"),
+    InlineKeyboardButton(text="Поиск по дате", callback_data="search_date_order"),
+    InlineKeyboardButton(text="Свободных мест по дате", callback_data="search_free_order"),
+    InlineKeyboardButton(text="🔙Назад", callback_data="close_callback")
+)
 
 months = InlineKeyboardMarkup(row_width=3)
 months.add(InlineKeyboardButton(text="Май", callback_data="sort_by_may"),
@@ -133,13 +133,45 @@ async def info_text(
         f"{status_text}\n\n"
     )
 
-async def add_service_buttons(order_id: int):
+
+async def service_buttons(order_id: int):
     add_service = InlineKeyboardMarkup(row_width=3)
-    add_service.add(InlineKeyboardButton(text="Трансфер", callback_data=f"add_transfers_buttons_{order_id}"),
-             InlineKeyboardButton(text="СапБорды", callback_data=f"add_supbords_buttons_{order_id}"),
-             InlineKeyboardButton(text="Катамараны", callback_data=f"add_catamaran_buttons_{order_id}"),
-             InlineKeyboardButton(text="Удалить заказ", callback_data=f"delete_order_{order_id}"),
-             InlineKeyboardButton(text="Изменить заказ", callback_data=f"change_order_{order_id}"))
+    add_service.add(InlineKeyboardButton(text="Трансфер", callback_data=f"transfers_buttons_{order_id}"),
+                    InlineKeyboardButton(text="СапБорды", callback_data=f"supbords_buttons_{order_id}"),
+                    InlineKeyboardButton(text="Катамараны", callback_data=f"catamaran_buttons_{order_id}"),
+                    InlineKeyboardButton(text="Удалить заказ", callback_data=f"delete_order_{order_id}"),
+                    InlineKeyboardButton(text="Изменить заказ", callback_data=f"change_order_{order_id}"))
     add_service.add(InlineKeyboardButton(text='🔙 Назад', callback_data='close'))
 
     return add_service
+
+
+async def catamarans_buttons(order_id: int):
+    catamarans = InlineKeyboardMarkup(row_width=3)
+    catamarans.add(InlineKeyboardButton(text="Добавить", callback_data='add_catamaran_{order_id}'),
+                   InlineKeyboardButton(text="Изменить", callback_data=f'change_catamaran_{order_id}'),
+                   InlineKeyboardButton(text="Удалить", callback_data=f'delete_catamaran_{order_id}'))
+
+    catamarans.add(InlineKeyboardButton(text='🔙 Назад', callback_data=f'service_{order_id}'))
+
+    return catamarans
+
+async def supboards_buttons(order_id: int):
+    supboards = InlineKeyboardMarkup(row_width=3)
+    supboards.add(InlineKeyboardButton(text="Добавить", callback_data=f'add_supboard_{order_id}'),
+                  InlineKeyboardButton(text="Изменить", callback_data=f'change_supboard_{order_id}'),
+                  InlineKeyboardButton(text="Удалить", callback_data=f'delete_supboard_{order_id}'))
+
+    supboards.add(InlineKeyboardButton(text='🔙 Назад', callback_data=f'service_{order_id}'))
+
+    return supboards
+
+async def transfer_buttons(order_id: int):
+    transfer = InlineKeyboardMarkup(row_width=3)
+    transfer.add(InlineKeyboardButton(text="Добавить", callback_data=f'add_transfer_{order_id}'),
+                 InlineKeyboardButton(text="Изменить", callback_data=f'change_transfer_{order_id}'),
+                 InlineKeyboardButton(text="Удалить", callback_data=f'delete_transfer_{order_id}'))
+
+    transfer.add(InlineKeyboardButton(text='🔙 Назад', callback_data=f'service_{order_id}'))
+
+    return transfer
