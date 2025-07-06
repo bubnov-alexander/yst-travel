@@ -1,8 +1,5 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
-
-from app.handlers.callbacks.catamarans.addFSM import register_add_catamaran_handlers
 from app.handlers.callbacks.catamarans.changeStatusFSM import register_change_status_catamaran_handlers
 from app.handlers.callbacks.catamarans.deleteFSM import register_delete_catamaran_handlers
 from app.handlers.callbacks.catamarans.editFSM import register_edit_catamaran_handlers
