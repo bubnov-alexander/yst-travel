@@ -157,9 +157,11 @@ def register_add_order_handlers(dp, bot):
             data['point_a'] = point_a
 
         await callback.message.edit_text(
-            f"📍 Вы выбрали точку А: {point_a}\nТеперь выберите пункт Б:",
+            text=f"📍 Вы выбрали точку А: {point_a}\nТеперь выберите пункт Б:",
             reply_markup=get_routes_keyboard_from_point_a(point_a)
         )
+
+        await MyFSM.next()
 
     @dp.callback_query_handler(lambda c: c.data.startswith('select_route_'), state=MyFSM.add_route)
     async def route_selected(callback: types.CallbackQuery, state: FSMContext):
@@ -223,7 +225,8 @@ def register_add_order_handlers(dp, bot):
             )
 
             if booking_successful:
-                await message.answer(f'Бронирование успешно добавлено. \n {info_text}', reply_markup=kb.main)
+                buttons = await kb.add_service_buttons(booking_successful)
+                await message.answer(f'Бронирование успешно добавлено. \n {info_text}', reply_markup=buttons)
                 try:
                     await message.bot.send_message(chat_id=CHAT_ID, text=f"Новое бронирование: {info_text}")
                 except Exception as e:

@@ -132,3 +132,14 @@ async def info_text(
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f"{status_text}\n\n"
     )
+
+async def add_service_buttons(order_id: int):
+    add_service = InlineKeyboardMarkup(row_width=3)
+    add_service.add(InlineKeyboardButton(text="Трансфер", callback_data=f"add_transfers_buttons_{order_id}"),
+             InlineKeyboardButton(text="СапБорды", callback_data=f"add_supbords_buttons_{order_id}"),
+             InlineKeyboardButton(text="Катамараны", callback_data=f"add_catamaran_buttons_{order_id}"),
+             InlineKeyboardButton(text="Удалить заказ", callback_data=f"delete_order_{order_id}"),
+             InlineKeyboardButton(text="Изменить заказ", callback_data=f"change_order_{order_id}"))
+    add_service.add(InlineKeyboardButton(text='🔙 Назад', callback_data='close'))
+
+    return add_service
