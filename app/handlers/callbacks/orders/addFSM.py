@@ -49,7 +49,7 @@ def register_add_order_handlers(dp, bot):
                 await MyFSM.next()
 
             except ValueError:
-                await message.answer('❌ Дата должна быть в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ', reply_markup=kb.close2)
+                await message.answer('❌ Дата приезда должна быть в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ', reply_markup=kb.close2)
 
     @dp.message_handler(state=MyFSM.add_date_end)
     async def save_date_end(message: types.Message, state: FSMContext):
@@ -99,9 +99,9 @@ def register_add_order_handlers(dp, bot):
                     )
                     await state.finish()
 
-            except ValueError:
+            except Exception as e:
                 await message.answer(
-                    '❌ Дата должна быть в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ',
+                    text=f'❌ Дата выезда должна быть в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ {e}',
                     reply_markup=kb.close2
                 )
             except Exception as e:

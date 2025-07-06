@@ -46,13 +46,13 @@ async def check_availability(date_start, date_end, requested, order_id=None):
         if order_id and o_id == order_id:
             continue
 
-        order_start = datetime.datetime.strptime(arrival, '%Y-%m-%d')
-        order_end = datetime.datetime.strptime(departure, '%Y-%m-%d') + datetime.timedelta(days=1)
+        order_start = datetime.datetime.strptime(arrival, '%d.%m.%Y')
+        order_end = datetime.datetime.strptime(departure, '%d.%m.%Y') + datetime.timedelta(days=1)
 
-        catamaran_row = get_order_by_id(o_id)
+        catamaran_row = await get_order_by_id(o_id)
         catamaran_q = catamaran_row[0] if catamaran_row else 0
 
-        supboard_row = get_supboard_by_id(o_id)
+        supboard_row = await get_supboard_by_id(o_id)
         supboard_q = supboard_row[0] if supboard_row else 0
 
         cursor.execute("SELECT COUNT(*) FROM transfer_services WHERE order_id = ?", (o_id,))
