@@ -21,4 +21,6 @@ def get_routes_keyboard_from_point_a(point_a):
     for route_id, point_b in routes:
         keyboard.add(InlineKeyboardButton(text=f'{point_a} - {point_b}', callback_data=f'select_route_{route_id}'))
 
+    keyboard.add(InlineKeyboardButton(text='🔙 Назад', callback_data='select_route_buttons'))
+
     return keyboard

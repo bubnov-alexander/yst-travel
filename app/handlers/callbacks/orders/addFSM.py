@@ -25,6 +25,7 @@ class MyFSM(StatesGroup):
     add_additional_wishes = State()
     add_prepayment_status = State()
 
+
 def register_add_order_handlers(dp, bot):
     @dp.callback_query_handler(text='add_order')
     async def add_order(callback: types.CallbackQuery):
@@ -49,7 +50,8 @@ def register_add_order_handlers(dp, bot):
                 await MyFSM.next()
 
             except ValueError:
-                await message.answer('❌ Дата приезда должна быть в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ', reply_markup=kb.close2)
+                await message.answer('❌ Дата приезда должна быть в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ',
+                                     reply_markup=kb.close2)
 
     @dp.message_handler(state=MyFSM.add_date_end)
     async def save_date_end(message: types.Message, state: FSMContext):
@@ -136,7 +138,10 @@ def register_add_order_handlers(dp, bot):
 
     @dp.callback_query_handler(lambda c: c.data.startswith('select_route_'), state=MyFSM.add_route)
     async def route_selected(callback: types.CallbackQuery, state: FSMContext):
-        route_id = int(callback.data.replace('select_route_', ''))
+        try:
+            route_id = int(callback.data.replace('select_route_', ''))
+        except:
+            return
         async with state.proxy() as data:
             data['route_id'] = route_id
 
@@ -160,8 +165,6 @@ def register_add_order_handlers(dp, bot):
             text=f"📍 Вы выбрали точку А: {point_a}\nТеперь выберите пункт Б:",
             reply_markup=get_routes_keyboard_from_point_a(point_a)
         )
-
-        await MyFSM.next()
 
     @dp.callback_query_handler(lambda c: c.data.startswith('select_route_'), state=MyFSM.add_route)
     async def route_selected(callback: types.CallbackQuery, state: FSMContext):
@@ -226,9 +229,19 @@ def register_add_order_handlers(dp, bot):
 
             if booking_successful:
                 buttons = await kb.add_service_buttons(booking_successful)
-                await message.answer(f'Бронирование успешно добавлено. \n {info_text}', reply_markup=buttons)
+                await message.answer(
+                    text=f'Бронирование успешно добавлено. \n {info_text}',
+                    reply_markup=buttons,
+                    parse_mode='HTML',
+                    disable_web_page_preview=True
+                )
                 try:
-                    await message.bot.send_message(chat_id=CHAT_ID, text=f"Новое бронирование: {info_text}")
+                    await message.bot.send_message(
+                        chat_id=CHAT_ID,
+                        text=f"Новое бронирование: {info_text}",
+                        parse_mode='HTML',
+                        disable_web_page_preview=True
+                    )
                 except Exception as e:
                     logger.error(f'Не удалось отправить сообщение в чат: {e}')
             else:
