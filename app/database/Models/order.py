@@ -2,7 +2,7 @@ import sqlite3
 import datetime
 import logging
 
-from app.database.Models.catamaran import get_order_by_id
+from app.database.Models.catamaran import get_catamaran_by_id
 from app.database.Models.supboaed import get_supboard_by_id
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ async def check_availability(date_start, date_end, requested, order_id=None):
         order_start = datetime.datetime.strptime(arrival, '%d.%m.%Y')
         order_end = datetime.datetime.strptime(departure, '%d.%m.%Y') + datetime.timedelta(days=1)
 
-        catamaran_row = await get_order_by_id(o_id)
+        catamaran_row = await get_catamaran_by_id(o_id)
         catamaran_q = catamaran_row[0] if catamaran_row else 0
 
         supboard_row = await get_supboard_by_id(o_id)
@@ -90,9 +90,6 @@ def get_all_order():
     database.close()
     return result
 
-import sqlite3
-
-
 async def add_new_order(
     date_arrival,
     date_departure,
@@ -131,3 +128,44 @@ async def add_new_order(
     except Exception as e:
         logger.error("[add_order] Ошибка при добавлении заказа: ", e)
         return False
+
+async def edit_order(
+        date_arrival, date_departure, time_arrival, time_departure,
+        route_id, customer_name, phone,
+        additional_wishes, prepayment_status, order_id
+):
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
+    cursor = database.cursor()
+
+    cursor.execute("""
+                   UPDATE orders
+                   SET date_arrival      = ?,
+                       date_departure    = ?,
+                       time_arrival      = ?,
+                       time_departure    = ?,
+                       route_id          = ?,
+                       customer_name     = ?,
+                       phone             = ?,
+                       additional_wishes = ?,
+                       prepayment_status = ?
+                   WHERE id = ?
+                   """, (
+                       date_arrival, date_departure, time_arrival, time_departure,
+                       route_id, customer_name, phone,
+                       additional_wishes, prepayment_status, order_id
+                   ))
+
+    database.commit()
+    database.close()
+
+    logger.info(f"📝 Заказ успешно изменён (ID: {order_id})")
+
+async def get_order_by_id(order_id: int):
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
+    cursor = database.cursor()
+
+    cursor.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
+    order = cursor.fetchone()
+    database.close()
+
+    return order

@@ -1,8 +1,8 @@
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from app.handlers.callbacks.catamarans.changeStatusFSM import register_change_status_catamaran_handlers
 from app.handlers.callbacks.catamarans.deleteFSM import register_delete_catamaran_handlers
-from app.handlers.callbacks.catamarans.editFSM import register_edit_catamaran_handlers
+from app.handlers.callbacks.orders.editFSM import register_edit_order_handlers
 from app.handlers.callbacks.catamarans.findOrderByDateFSM import register_find_order_by_date_handlers
 from app.handlers.callbacks.catamarans.findOrderByIdFSM import register_find_order_by_id_handlers
 from app.handlers.callbacks.catamarans.getMonthCallback import register_callback_query_get_month_catamarans
@@ -31,7 +31,7 @@ import datetime as dt
 from app.handlers.commands.startCommand import register_handlers_start
 from app.utils.middleware import CallbackLoggerMiddleware, MessageLoggerMiddleware
 
-from config import TOKEN, TIMEZONE, CHAT_ID
+from config import TOKEN, TIMEZONE
 
 # ============== Settings ==============
 storage = MemoryStorage()
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     # register_add_catamaran_handlers(dp, bot)
     register_add_order_handlers(dp, bot)
 
-    register_edit_catamaran_handlers(dp, bot)
+    register_edit_order_handlers(dp)
     register_delete_catamaran_handlers(dp, bot)
     register_change_status_catamaran_handlers(dp, bot)
     register_search_free_catamaran_handlers(dp, bot)

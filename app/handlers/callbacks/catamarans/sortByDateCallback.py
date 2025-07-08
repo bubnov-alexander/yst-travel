@@ -5,7 +5,7 @@ from app.database.Models import catamaran
 
 async def sort_date_catamaran(callback: types.CallbackQuery):
     page = 1
-    orders = await catamaran.sort_date_order()
+    orders = await catamaran.sort_date_catamaran()
     total_pages = (len(orders) + 4) // 5
     start_index = (page - 1) * 5
     end_index = start_index + 5
@@ -61,7 +61,7 @@ async def sort_by_month(callback: types.CallbackQuery):
             )
         else:
             page = 1
-            orders = await catamaran.sort_date_order()
+            orders = await catamaran.sort_date_catamaran()
             orders = [order for order in orders if int(order[1].split('.')[1]) == month_number]
             total_pages = (len(orders) + 4) // 5
             start_index = (page - 1) * 5

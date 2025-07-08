@@ -98,7 +98,7 @@ async def info_text(
         time_arrival: str,
         date_departure: str,
         time_departure: str,
-        route_id: str,
+        route_id,
         customer_name: str,
         phone_link: str,
         additional_wishes: str = "",
@@ -114,7 +114,6 @@ async def info_text(
 
     # Форматируем телефон с кликабельной ссылкой
     phone = phone_link.replace('https://wa.me/', '')
-    route = get_route_by_id(route_id)
 
     # Собираем полный текст
     return (
@@ -125,7 +124,7 @@ async def info_text(
         f"⏰️ <b>Время приезда:</b> {time_arrival}\n"
         f"⚡️ <b>Дата выезда:</b> {date_departure}\n"
         f"⏰️ <b>Время выезда:</b> {time_departure}\n"
-        f"🗺 <b>Маршрут:</b> {route['name']}\n"
+        f"🗺 <b>Маршрут:</b> {route_id['name']}\n"
         f"🤵 <b>ФИО:</b> {customer_name}\n"
         f"📞 <b>Телефон:</b><a href='{phone_link}'> +{phone}</a>\n"
         f"{wishes_text}\n"

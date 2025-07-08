@@ -23,7 +23,7 @@ def register_delete_catamaran_handlers(dp, bot):
     @dp.message_handler(state=DeleteOrderFSM.delete_order)
     async def delete_order_by_id(message: types.Message, state: FSMContext):
         order_id = message.text.strip()
-        order = await catamaran.get_order_by_id(order_id)
+        order = await catamaran.get_catamaran_by_id(order_id)
         if order:
             await catamaran.delete_order(order_id)
             await message.answer(f'✅ Заказ с ID {order_id} удален.', reply_markup=kb.main)

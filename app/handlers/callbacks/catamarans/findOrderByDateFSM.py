@@ -32,7 +32,7 @@ def register_find_order_by_date_handlers(dp, bot):
             await state.finish()
             return
 
-        db_date = await catamaran.get_order_by_date(date)
+        db_date = await catamaran.get_catamaran_by_date(date)
         if db_date:
             text = ''
             for i in db_date:

@@ -46,41 +46,7 @@ async def delete_order(order_id):
     logger.info("Заказ успешно удален")
 
 
-async def edit_order(
-        date_arrival, date_departure, time_arrival, time_departure,
-        route_id, quantity, customer_name, phone, price,
-        additional_wishes, prepayment_status, order_id
-):
-    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
-    cursor = database.cursor()
-
-    cursor.execute("""
-                   UPDATE catamaran_orders
-                   SET date_arrival      = ?,
-                       date_departure    = ?,
-                       time_arrival      = ?,
-                       time_departure    = ?,
-                       route_id          = ?,
-                       quantity          = ?,
-                       customer_name     = ?,
-                       phone             = ?,
-                       price             = ?,
-                       additional_wishes = ?,
-                       prepayment_status = ?
-                   WHERE id = ?
-                   """, (
-                       date_arrival, date_departure, time_arrival, time_departure,
-                       route_id, quantity, customer_name, phone, price,
-                       additional_wishes, prepayment_status, order_id
-                   ))
-
-    database.commit()
-    database.close()
-
-    logger.info(f"📝 Заказ успешно изменён (ID: {order_id})")
-
-
-async def get_order_by_id(order_id):
+async def get_catamaran_by_id(order_id):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
@@ -158,7 +124,7 @@ async def get_available_catamarans(date):
     return availability
 
 
-async def sort_date_order():
+async def sort_date_catamaran():
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
@@ -172,7 +138,7 @@ async def sort_date_order():
     return orders_sorted
 
 
-async def get_order_by_date(date):
+async def get_catamaran_by_date(date):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
@@ -182,7 +148,7 @@ async def get_order_by_date(date):
     return orders
 
 
-async def status_order(order_id):
+async def status_catamaran(order_id):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 

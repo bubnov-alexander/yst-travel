@@ -8,10 +8,10 @@ async def prev_page(callback: types.CallbackQuery):
     is_month = "month" in callback.data
 
     if is_sorted:
-        orders = await catamaran.sort_date_order()
+        orders = await catamaran.sort_date_catamaran()
     elif is_month:
         month_number = int(callback.data.split("_")[4])
-        orders = await catamaran.sort_date_order()
+        orders = await catamaran.sort_date_catamaran()
         filtered_orders = []
         for order in orders:
             if int(order[5].split('.')[1]) == month_number:
@@ -39,10 +39,10 @@ async def next_page(callback: types.CallbackQuery):
     month_number = 0
 
     if is_sorted:
-        orders = await catamaran.sort_date_order()
+        orders = await catamaran.sort_date_catamaran()
     elif is_month:
         month_number = int(callback.data.split("_")[4])
-        orders = await catamaran.sort_date_order()
+        orders = await catamaran.sort_date_catamaran()
         filtered_orders = []
         for order in orders:
             if int(order[1].split('.')[1]) == month_number:
