@@ -53,7 +53,7 @@ def register_edit_order_handlers(dp):
 
         route = get_route_by_id(order[5])
 
-        text = await kb.info_text(
+        text = await kb.info_order_text(
             order_id=order[0],
             date_arrival=order[1],
             time_arrival=order[2],
@@ -62,8 +62,8 @@ def register_edit_order_handlers(dp):
             route_id=route,
             customer_name=order[6],
             phone_link=order[7],
-            additional_wishes=order[8],
-            status=order[9]
+            additional_wishes=order[9],
+            status=order[8]
         )
 
         async with state.proxy() as data:
@@ -95,12 +95,12 @@ def register_edit_order_handlers(dp):
             data['route_id'] = order[5]
             data['customer_name'] = order[6]
             data['phone'] = order[7]
-            data['additional_wishes'] = order[8]
-            data['prepayment_status'] = order[9]
+            data['additional_wishes'] = order[9]
+            data['prepayment_status'] = order[8]
 
         await EditOrderFSM.edit_date_arrival.set()
         await callback.bot.send_message(chat_id=callback.message.chat.id,
-                                        text='📅 Напишите дату приезда (например: 15.07.2024):', reply_markup=kb.close3)
+                                        text='📅 Напишите дату приезда (например: 15.07.2024):', reply_markup=kb.close_replay_callback)
 
     @dp.message_handler(state=EditOrderFSM.edit_date_arrival)
     async def save_edit_date_arrival(message: types.Message, state: FSMContext):
@@ -112,7 +112,7 @@ def register_edit_order_handlers(dp):
             return
 
         if user_input == 'пропустить':
-            await message.answer('📅 Напишите дату выезда (например: 20.07.2024)', reply_markup=kb.close3)
+            await message.answer('📅 Напишите дату выезда (например: 20.07.2024)', reply_markup=kb.close_replay_callback)
             await EditOrderFSM.edit_date_departure.set()
             return
 
@@ -127,12 +127,12 @@ def register_edit_order_handlers(dp):
             async with state.proxy() as data:
                 data['date_arrival'] = formatted_date
 
-            await message.answer('📅 Напишите дату выезда (например: 20.07.2024)', reply_markup=kb.close3)
+            await message.answer('📅 Напишите дату выезда (например: 20.07.2024)', reply_markup=kb.close_replay_callback)
             await EditOrderFSM.edit_date_departure.set()
 
         except ValueError:
             await message.answer('❌ Неверный формат. Введите дату в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ',
-                                 reply_markup=kb.close3)
+                                 reply_markup=kb.close_replay_callback)
 
     @dp.message_handler(state=EditOrderFSM.edit_date_departure)
     async def save_edit_date_departure(message: types.Message, state: FSMContext):
@@ -146,7 +146,7 @@ def register_edit_order_handlers(dp):
         if user_input == 'пропустить':
             await message.answer(
                 text='⏰ Напишите <b>время приезда</b> (например: 14:30)',
-                reply_markup=kb.close3,
+                reply_markup=kb.close_replay_callback,
                 parse_mode='HTML'
             )
             await EditOrderFSM.edit_time_arrival.set()
@@ -164,7 +164,7 @@ def register_edit_order_handlers(dp):
 
                 await message.answer(
                     text='⏰ Напишите <b>время приезда</b> (например: 14:30)',
-                    reply_markup=kb.close3,
+                    reply_markup=kb.close_replay_callback,
                     parse_mode='HTML'
                 )
 
@@ -173,7 +173,7 @@ def register_edit_order_handlers(dp):
             except ValueError:
                 await message.answer(
                     '❌ Неверный формат. Введите дату в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ',
-                    reply_markup=kb.close3
+                    reply_markup=kb.close_replay_callback
                 )
 
     @dp.message_handler(state=EditOrderFSM.edit_time_arrival)
@@ -186,19 +186,19 @@ def register_edit_order_handlers(dp):
             return
 
         if user_input == 'пропустить':
-            await message.answer('⏰ Напишите <b>время выезда</b> (например: 14:30)', reply_markup=kb.close3,
+            await message.answer('⏰ Напишите <b>время выезда</b> (например: 14:30)', reply_markup=kb.close_replay_callback,
                                  parse_mode='HTML')
             await EditOrderFSM.edit_time_departure.set()
             return
 
         if not re.match(r'^\d{2}:\d{2}$', message.text.strip()):
-            await message.answer('❌ Время должно быть в формате ЧЧ:ММ, например: 16:00', reply_markup=kb.close3)
+            await message.answer('❌ Время должно быть в формате ЧЧ:ММ, например: 16:00', reply_markup=kb.close_replay_callback)
             return
 
         async with state.proxy() as data:
             data['time_arrival'] = message.text.strip()
 
-        await message.answer('⏰ Напишите <b>время выезда</b> (например: 14:30)', reply_markup=kb.close3,
+        await message.answer('⏰ Напишите <b>время выезда</b> (например: 14:30)', reply_markup=kb.close_replay_callback,
                              parse_mode='HTML')
         await EditOrderFSM.edit_time_departure.set()
 
@@ -218,7 +218,7 @@ def register_edit_order_handlers(dp):
             return
 
         if not re.match(r'^\d{2}:\d{2}$', message.text.strip()):
-            await message.answer('❌ Время должно быть в формате ЧЧ:ММ, например: 16:00', reply_markup=kb.close3)
+            await message.answer('❌ Время должно быть в формате ЧЧ:ММ, например: 16:00', reply_markup=kb.close_replay_callback)
             return
 
         async with state.proxy() as data:
@@ -256,13 +256,13 @@ def register_edit_order_handlers(dp):
                 await state.finish()
                 return
             elif message.text.lower() == 'пропустить':
-                await message.answer('👤 Напиши ФИО заказчика', reply_markup=kb.close3)
+                await message.answer('👤 Напиши ФИО заказчика', reply_markup=kb.close_replay_callback)
                 await EditOrderFSM.edit_customer_name.set()
                 return
             else:
                 data['route'] = message.text
 
-        await message.answer('👤 Напиши ФИО заказчика', reply_markup=kb.close3)
+        await message.answer('👤 Напиши ФИО заказчика', reply_markup=kb.close_replay_callback)
         await EditOrderFSM.edit_customer_name.set()
 
     @dp.message_handler(state=EditOrderFSM.edit_customer_name)
@@ -273,12 +273,12 @@ def register_edit_order_handlers(dp):
                 await state.finish()
                 return
             elif message.text.lower() == 'пропустить':
-                await message.answer('📞 Напиши "Номер телефона заказчика"', reply_markup=kb.close3)
+                await message.answer('📞 Напиши "Номер телефона заказчика"', reply_markup=kb.close_replay_callback)
                 await EditOrderFSM.edit_phone.set()
                 return
             else:
                 data['customer_name'] = message.text
-        await message.answer('📞 Напиши "Номер телефона заказчика"', reply_markup=kb.close3)
+        await message.answer('📞 Напиши "Номер телефона заказчика"', reply_markup=kb.close_replay_callback)
         await EditOrderFSM.edit_phone.set()
 
     @dp.message_handler(state=EditOrderFSM.edit_phone)
@@ -290,7 +290,7 @@ def register_edit_order_handlers(dp):
                     await state.finish()
                     return
                 elif message.text.lower() == 'пропустить':
-                    await message.answer('📝 Напиши "Дополнительные пожелания"', reply_markup=kb.close3)
+                    await message.answer('📝 Напиши "Дополнительные пожелания"', reply_markup=kb.close_replay_callback)
                     await EditOrderFSM.edit_additional_wishes.set()
                     return
                 else:
@@ -301,15 +301,15 @@ def register_edit_order_handlers(dp):
                     elif len(phone) == 11 and phone[0] in ('7', '8'):
                         whatsapp_link = f"https://wa.me/7{phone[1:]}"
                     else:
-                        await message.answer('❌ Неверный формат номера. Введите 10 или 11 цифр', reply_markup=kb.close3)
+                        await message.answer('❌ Неверный формат номера. Введите 10 или 11 цифр', reply_markup=kb.close_replay_callback)
                         return
 
                     data['phone'] = whatsapp_link
-                    await message.answer('📝 Напиши "Дополнительные пожелания"', reply_markup=kb.close3)
+                    await message.answer('📝 Напиши "Дополнительные пожелания"', reply_markup=kb.close_replay_callback)
                     await EditOrderFSM.edit_additional_wishes.set()
 
             except Exception as e:
-                await message.answer('❌ Ошибка обработки номера, попробуйте ещё раз', reply_markup=kb.close3)
+                await message.answer('❌ Ошибка обработки номера, попробуйте ещё раз', reply_markup=kb.close_replay_callback)
                 logger.error(f"Phone processing error (edit): {e}")
 
     @dp.message_handler(state=EditOrderFSM.edit_additional_wishes)
@@ -328,7 +328,7 @@ def register_edit_order_handlers(dp):
                 try:
                     route = get_route_by_id(data['route_id'])
 
-                    text = await kb.info_text(
+                    text = await kb.info_order_text(
                         order_id=data['order_id'],
                         date_arrival=data['date_arrival'],
                         date_departure=data['date_departure'],

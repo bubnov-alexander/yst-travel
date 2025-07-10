@@ -1,11 +1,13 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 
+from app.database.Models.catamaran import get_catamaran_quantity, get_catamaran_price
 from app.database.Models.route import get_route_by_id
+from app.database.Models.supboaed import get_supboard_quantity, get_supboard_price
+from app.database.Models.transfer import get_transfer_quantity, get_transfer_price, get_transfer_route_id
 
 main = InlineKeyboardMarkup(row_width=3)
 main.add(InlineKeyboardButton(text="Добавить заказ", callback_data="add_order"),
          InlineKeyboardButton(text="Просмотр заказов", callback_data="search_order"),
-         InlineKeyboardButton(text="Удалить заказ", callback_data="delete_order"),
          InlineKeyboardButton(text="Изменить заказ", callback_data="edit_order"),
          InlineKeyboardButton(text="Поменять статус", callback_data="status_order"))
 main.add(InlineKeyboardButton(text='Excel таблица', callback_data='excel'))
@@ -38,9 +40,19 @@ close.add(InlineKeyboardButton(text='🔙Назад', callback_data='close'))
 close2 = InlineKeyboardMarkup()
 close2.add(InlineKeyboardButton(text='🔙Назад', callback_data='close_callback'))
 
-close3 = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-close3.add(KeyboardButton(text='Отменить'),
-           KeyboardButton(text='Пропустить'))
+close_replay_callback = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+close_replay_callback.add(KeyboardButton(text='Отменить'),
+                          KeyboardButton(text='Пропустить'))
+
+
+async def generate_confirm_buttons(entity_type: str):
+    confirm_delete = InlineKeyboardMarkup()
+    confirm_delete.add(
+        InlineKeyboardButton(text='✅ Да', callback_data=f'confirm_delete_yes_{entity_type}'),
+        InlineKeyboardButton(text='❌ Нет', callback_data=f'confirm_delete_no_{entity_type}')
+    )
+    return confirm_delete
+
 
 close4 = InlineKeyboardMarkup()
 close4.add(InlineKeyboardButton(text='🔙Назад', callback_data='close_callback2'))
@@ -92,7 +104,7 @@ async def generate_orders_text_and_markup(orders_page, page, total_pages, is_sor
     return orders_text, markup
 
 
-async def info_text(
+async def info_order_text(
         order_id: int,
         date_arrival: str,
         time_arrival: str,
@@ -104,16 +116,38 @@ async def info_text(
         additional_wishes: str = "",
         status: bool = False
 ):
-    # Форматируем статус
-    status_text = "✅ <b>Статус:</b> Подтверждён!" if status else "❌ <b>Статус:</b> Не подтверждён!"
+    status_text = "✅ <b>Аванс:</b> Внесён!" if status else "❌ <b>Аванс:</b> Не внесён!"
 
-    # Форматируем дополнительные пожелания
     wishes_text = ""
     if additional_wishes and additional_wishes.strip() not in ["", ".", " "]:
         wishes_text = f"📗 <b>Дополнительные пожелания:</b> {additional_wishes}\n"
 
     # Форматируем телефон с кликабельной ссылкой
     phone = phone_link.replace('https://wa.me/', '')
+
+    catamarans = (await get_catamaran_quantity(order_id) or [0])[0]
+    transfers = (await get_transfer_quantity(order_id) or [0])[0]
+    supboards = (await get_supboard_quantity(order_id) or [0])[0]
+
+    catamarans_price = (await get_catamaran_price(order_id) or [0])[0]
+    transfers_price = (await get_transfer_price(order_id) or [0])[0]
+    supboards_price = (await get_supboard_price(order_id) or [0])[0]
+
+    transfer_route_id = (await get_transfer_route_id(order_id) or ['Маршрута нету'])[0]
+
+    try:
+        route_transfer = await get_route_by_id(transfer_route_id)
+    except:
+        route_transfer = {'name': 'Маршрута нету'}
+
+    price = catamarans_price + transfers_price + supboards_price
+
+    services_text = (
+        f"🛶 <b>Катамаранов:</b> {catamarans}\n"
+        f"🚐 <b>Трансферов:</b> {transfers}\n"
+        f"🏄 <b>Сапбордов:</b> {supboards}\n"
+        f"💰 <b>Цена:</b> {price}₽\n"
+    )
 
     # Собираем полный текст
     return (
@@ -125,18 +159,51 @@ async def info_text(
         f"⚡️ <b>Дата выезда:</b> {date_departure}\n"
         f"⏰️ <b>Время выезда:</b> {time_departure}\n"
         f"🗺 <b>Маршрут:</b> {route_id['name']}\n"
+        f"🗺 <b>Маршрут для трансфера:</b> {route_transfer['name']}\n"
         f"🤵 <b>ФИО:</b> {customer_name}\n"
         f"📞 <b>Телефон:</b><a href='{phone_link}'> +{phone}</a>\n"
         f"{wishes_text}\n"
+
+        f"{services_text}"
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f"{status_text}\n\n"
     )
 
 
+async def info_catamaran_text(
+        order_id: int,
+        price,
+        quantity,
+        catamaran_id
+):
+    return (
+        f"📝 <b>Информация о катамаранах в заказе {order_id}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📌 <b>ID заказа:</b> {catamaran_id}\n"
+        f"🚤 <b>Количество катамаранов:</b> {quantity}\n"
+        f"💸 <b>Цена:</b> {price}\n"
+    )
+
+
+async def info_supboard_text(
+        order_id: int,
+        price,
+        quantity,
+        supboard_id
+):
+    return (
+        f"📝 <b>Информация о SUP-бордов в заказе {order_id}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📌 <b>ID заказа:</b> {supboard_id}\n"
+        f"🚤 <b>Количество SUP-бордов:</b> {quantity}\n"
+        f"💸 <b>Цена:</b> {price}\n"
+    )
+
+
 async def service_buttons(order_id: int):
     add_service = InlineKeyboardMarkup(row_width=3)
-    add_service.add(InlineKeyboardButton(text="Трансфер", callback_data=f"transfers_buttons_{order_id}"),
-                    InlineKeyboardButton(text="СапБорды", callback_data=f"supbords_buttons_{order_id}"),
+    add_service.add(InlineKeyboardButton(text="Трансфер", callback_data=f"transfer_buttons_{order_id}"),
+                    InlineKeyboardButton(text="СапБорды", callback_data=f"supboard_buttons_{order_id}"),
                     InlineKeyboardButton(text="Катамараны", callback_data=f"catamaran_buttons_{order_id}"),
                     InlineKeyboardButton(text="Удалить заказ", callback_data=f"delete_order_{order_id}"),
                     InlineKeyboardButton(text="Изменить заказ", callback_data=f"change_order_{order_id}"))
@@ -147,13 +214,14 @@ async def service_buttons(order_id: int):
 
 async def catamarans_buttons(order_id: int):
     catamarans = InlineKeyboardMarkup(row_width=3)
-    catamarans.add(InlineKeyboardButton(text="Добавить", callback_data='add_catamaran_{order_id}'),
+    catamarans.add(InlineKeyboardButton(text="Добавить", callback_data=f'add_catamaran_{order_id}'),
                    InlineKeyboardButton(text="Изменить", callback_data=f'change_catamaran_{order_id}'),
                    InlineKeyboardButton(text="Удалить", callback_data=f'delete_catamaran_{order_id}'))
 
-    catamarans.add(InlineKeyboardButton(text='🔙 Назад', callback_data=f'service_{order_id}'))
+    catamarans.add(InlineKeyboardButton(text='🔙 Назад', callback_data='close'))
 
     return catamarans
+
 
 async def supboards_buttons(order_id: int):
     supboards = InlineKeyboardMarkup(row_width=3)
@@ -161,9 +229,10 @@ async def supboards_buttons(order_id: int):
                   InlineKeyboardButton(text="Изменить", callback_data=f'change_supboard_{order_id}'),
                   InlineKeyboardButton(text="Удалить", callback_data=f'delete_supboard_{order_id}'))
 
-    supboards.add(InlineKeyboardButton(text='🔙 Назад', callback_data=f'service_{order_id}'))
+    supboards.add(InlineKeyboardButton(text='🔙 Назад', callback_data='close'))
 
     return supboards
+
 
 async def transfer_buttons(order_id: int):
     transfer = InlineKeyboardMarkup(row_width=3)
@@ -171,6 +240,6 @@ async def transfer_buttons(order_id: int):
                  InlineKeyboardButton(text="Изменить", callback_data=f'change_transfer_{order_id}'),
                  InlineKeyboardButton(text="Удалить", callback_data=f'delete_transfer_{order_id}'))
 
-    transfer.add(InlineKeyboardButton(text='🔙 Назад', callback_data=f'service_{order_id}'))
+    transfer.add(InlineKeyboardButton(text='🔙 Назад', callback_data='close'))
 
     return transfer

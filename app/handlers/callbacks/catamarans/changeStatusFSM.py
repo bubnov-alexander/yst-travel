@@ -19,7 +19,7 @@ def register_change_status_catamaran_handlers(dp, bot):
     @dp.message_handler(state=StatusOrder.status_order)
     async def status_order_by_id(message: types.Message, state: FSMContext):
         order_id = message.text
-        order = await catamaran.get_catamaran_by_id(order_id)
+        order = await catamaran.get_catamaran_quantity(order_id)
         if order:
             await catamaran.status_catamaran(order_id)
             await bot.send_message(chat_id=message.chat.id, text=f'Статус заказа с ID {order_id} изменен',

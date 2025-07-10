@@ -7,6 +7,7 @@ import datetime as dt
 
 from app import keyboard as kb
 from app.database.Models.order import check_availability, add_new_order
+from app.database.Models.route import get_route_by_id
 from app.utils.getRouteButton import get_points_a_keyboard, get_routes_keyboard_from_point_a
 from config import CHAT_ID
 from app.utils.logger import logger
@@ -201,6 +202,8 @@ def register_add_order_handlers(dp, bot):
         async with state.proxy() as data:
             data['additional_wishes'] = None if message.text.lower() == 'пропустить' else message.text
 
+            route = get_route_by_id(data['route_id'])
+
             booking_successful = await add_new_order(
                 date_arrival=data['date_start'],
                 date_departure=data['date_end'],
@@ -213,13 +216,13 @@ def register_add_order_handlers(dp, bot):
                 prepayment_status=0
             )
 
-            info_text = await kb.info_text(
+            info_text = await kb.info_order_text(
                 order_id=booking_successful,
                 date_arrival=data['date_start'],
                 date_departure=data['date_end'],
                 time_arrival=data['time_start'],
                 time_departure=data['time_end'],
-                route_id=data['route_id'],
+                route_id=route,
                 customer_name=data['customer_name'],
                 phone_link=data['customer_phone'],
                 additional_wishes=data['additional_wishes'],

@@ -29,7 +29,7 @@ def register_find_order_by_id_handlers(dp, bot):
             await message.answer('❌ ID заказа должен быть числом', reply_markup=kb.main)
             return
 
-        order = await catamaran.get_catamaran_by_id(order_id)
+        order = await catamaran.get_catamaran_quantity(order_id)
 
         if order:
             route = get_route_by_id(order[5])

@@ -2,8 +2,8 @@ import sqlite3
 import datetime
 import logging
 
-from app.database.Models.catamaran import get_catamaran_by_id
-from app.database.Models.supboaed import get_supboard_by_id
+from app.database.Models.catamaran import get_catamaran_quantity
+from app.database.Models.supboaed import get_supboard_quantity
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,9 @@ async def check_availability(date_start, date_end, requested, order_id=None):
     cursor = database.cursor()
 
     requested_start = datetime.datetime.strptime(date_start, '%d.%m.%Y')
-    requested_end = datetime.datetime.strptime(date_end, '%d.%m.%Y') + datetime.timedelta(days=1)
+    requested_end = datetime.datetime.strptime(date_end, '%d.%m.%Y')
+
+    days_count = (requested_end - requested_start).days + 1
 
     availability = {
         'catamarans': {},
@@ -33,7 +35,7 @@ async def check_availability(date_start, date_end, requested, order_id=None):
         'transfers': {}
     }
 
-    for single_date in (requested_start + datetime.timedelta(n) for n in range((requested_end - requested_start).days)):
+    for single_date in (requested_start + datetime.timedelta(n) for n in range(days_count)):
         availability['catamarans'][single_date] = TOTAL_CATAMARANS
         availability['supboards'][single_date] = TOTAL_SUPBOARDS
         availability['transfers'][single_date] = TOTAL_TRANSFER_VEHICLES
@@ -47,18 +49,22 @@ async def check_availability(date_start, date_end, requested, order_id=None):
             continue
 
         order_start = datetime.datetime.strptime(arrival, '%d.%m.%Y')
-        order_end = datetime.datetime.strptime(departure, '%d.%m.%Y') + datetime.timedelta(days=1)
+        order_end = datetime.datetime.strptime(departure, '%d.%m.%Y')
 
-        catamaran_row = await get_catamaran_by_id(o_id)
+        order_days_count = (order_end - order_start).days + 1
+
+        catamaran_row = await get_catamaran_quantity(o_id)
         catamaran_q = catamaran_row[0] if catamaran_row else 0
 
-        supboard_row = await get_supboard_by_id(o_id)
+        supboard_row = await get_supboard_quantity(o_id)
         supboard_q = supboard_row[0] if supboard_row else 0
 
         cursor.execute("SELECT COUNT(*) FROM transfer_services WHERE order_id = ?", (o_id,))
         transfer_count = cursor.fetchone()[0]
 
-        for single_date in (order_start + datetime.timedelta(n) for n in range((order_end - order_start).days)):
+        order_days_count = (order_end - order_start).days + 1
+
+        for single_date in (order_start + datetime.timedelta(n) for n in range(order_days_count)):
             if single_date in availability['catamarans']:
                 availability['catamarans'][single_date] -= catamaran_q
                 availability['supboards'][single_date] -= supboard_q
@@ -72,9 +78,9 @@ async def check_availability(date_start, date_end, requested, order_id=None):
     )
 
     remaining = {
-        'catamarans': min(availability['catamarans'].values()),
-        'supboards': min(availability['supboards'].values()),
-        'transfers': min(availability['transfers'].values())
+        'catamarans': min(availability['catamarans'].values()) if availability['catamarans'] else 0,
+        'supboards': min(availability['supboards'].values()) if availability['supboards'] else 0,
+        'transfers': min(availability['transfers'].values()) if availability['transfers'] else 0,
     }
 
     database.close()

@@ -36,7 +36,7 @@ def register_find_order_by_date_handlers(dp, bot):
         if db_date:
             text = ''
             for i in db_date:
-                text += await kb.info_text(i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11])
+                text += await kb.info_order_text(i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11])
             await message.answer(
                 text=text,
                 reply_markup=kb.back_to_search_order,
