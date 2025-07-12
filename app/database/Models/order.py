@@ -175,3 +175,15 @@ async def get_order_by_id(order_id: int):
     database.close()
 
     return order
+
+async def change_status_order(order_id):
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
+    cursor = database.cursor()
+
+    cursor.execute("UPDATE orders SET prepayment_status = NOT prepayment_status WHERE id = ?", (order_id,))
+    database.commit()
+
+    cursor.execute("SELECT prepayment_status FROM orders WHERE id = ?", (order_id,))
+    status = cursor.fetchone()
+
+    return status[0]
