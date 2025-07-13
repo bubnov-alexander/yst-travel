@@ -176,7 +176,15 @@ async def get_order_by_id(order_id: int):
 
     return order
 
-async def change_status_order(order_id):
+async def delete_order_by_id(transfer_id: int):
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
+    cursor = database.cursor()
+
+    cursor.execute("DELETE FROM orders WHERE id = ?", (transfer_id,))
+    database.commit()
+    database.close()
+
+def change_status_order(order_id):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
@@ -187,3 +195,61 @@ async def change_status_order(order_id):
     status = cursor.fetchone()
 
     return status[0]
+
+async def get_orders():
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
+    cursor = database.cursor()
+
+    cursor.execute("SELECT * FROM orders")
+    orders = cursor.fetchall()
+
+    return orders
+
+async def get_order_by_date(date):
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
+    cursor = database.cursor()
+
+    cursor.execute("SELECT * FROM orders WHERE date_arrival = ?", (date,))
+    orders = cursor.fetchall()
+
+    return orders
+
+async def sort_date_orders():
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
+    cursor = database.cursor()
+
+    cursor.execute("SELECT * FROM orders")
+    orders = cursor.fetchall()
+
+    orders_sorted = sorted(orders, key=lambda x: datetime.datetime.strptime(str(x[1]), '%d.%m.%Y')
+    if isinstance(x[1], str) else datetime.datetime.now())
+
+    return orders_sorted
+
+async def get_orders_with_catamarans_sorted(service):
+    database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
+    cursor = database.cursor()
+
+    cursor.execute("SELECT * FROM orders")
+    orders = cursor.fetchall()
+
+    orders_with_catamarans = []
+
+    for order in orders:
+        order_id = order[0]
+        date_start = order[1]
+
+        cursor.execute(f"SELECT * FROM {service} WHERE order_id = ?", (order_id,))
+        catamaran_row = cursor.fetchone()
+
+        if catamaran_row and catamaran_row[0] > 0:
+            orders_with_catamarans.append(order)
+
+    # Сортируем по дате начала
+    orders_sorted = sorted(
+        orders_with_catamarans,
+        key=lambda x: datetime.datetime.strptime(x[1], '%d.%m.%Y') if isinstance(x[1], str) else datetime.datetime.min
+    )
+
+    database.close()
+    return orders_sorted

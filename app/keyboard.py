@@ -12,18 +12,48 @@ main.add(InlineKeyboardButton(text="Добавить заказ", callback_data=
          InlineKeyboardButton(text="Поменять статус", callback_data="status_order"))
 main.add(InlineKeyboardButton(text='Excel таблица', callback_data='excel'))
 
-back_to_search_order = InlineKeyboardMarkup(row_width=1)
-back_to_search_order.add(InlineKeyboardButton(text='🔙Назад', callback_data='search_order'))
+# def get_main_menu(user_role: str) -> InlineKeyboardMarkup:
+#     main = InlineKeyboardMarkup(row_width=3)
+#
+#     main.add(
+#         InlineKeyboardButton(text="Добавить заказ", callback_data="add_order"),
+#         InlineKeyboardButton(text="Просмотр заказов", callback_data="search_order"),
+#         InlineKeyboardButton(text="Изменить заказ", callback_data="edit_order"),
+#         InlineKeyboardButton(text="Поменять статус", callback_data="status_order")
+#     )
+#
+#     main.add(InlineKeyboardButton(text='Excel таблица', callback_data='excel'))
+#
+#     if user_role == 'superadmin':
+#         main.add(InlineKeyboardButton(text='⚙ Настройки', callback_data='settings'))
+#
+#     return main
 
 sort_orders = InlineKeyboardMarkup(row_width=1)
 sort_orders.add(
     InlineKeyboardButton(text="Все заказы", callback_data="view_catamarans"),
-    InlineKeyboardButton(text="Сортировка по дате", callback_data="sort_date_order"),
+    InlineKeyboardButton(text="Сортировка по дате", callback_data="selection_of_sorts"),
     InlineKeyboardButton(text="Выбор заказав в определённом месяце", callback_data="sort_month_order"),
     InlineKeyboardButton(text="Поиск по ID", callback_data="search_id_order"),
     InlineKeyboardButton(text="Поиск по дате", callback_data="search_date_order"),
     InlineKeyboardButton(text="Свободных мест по дате", callback_data="search_free_order"),
     InlineKeyboardButton(text="🔙Назад", callback_data="close_callback")
+)
+
+yes_no_kb = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Да"), KeyboardButton(text="Нет")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+
+selection_of_sorts = InlineKeyboardMarkup(row_width=1)
+selection_of_sorts.add(
+    InlineKeyboardButton(text="Всех заказов", callback_data="sort_date_order"),
+    InlineKeyboardButton(text="Катамараны", callback_data="sort_date_catamaran_services"),
+    InlineKeyboardButton(text="Трансферы", callback_data="sort_date_transfer_services"),
+    InlineKeyboardButton(text="СапБорды", callback_data="sort_date_supboard_services"),
 )
 
 months = InlineKeyboardMarkup(row_width=3)
@@ -44,6 +74,12 @@ close_replay_callback = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keybo
 close_replay_callback.add(KeyboardButton(text='Отменить'),
                           KeyboardButton(text='Пропустить'))
 
+async def generate_buttons_for_search(callback_data):
+    back_to_search_order = InlineKeyboardMarkup(row_width=1)
+    back_to_search_order.add(InlineKeyboardButton(text='Повторить поиск', callback_data=f'{callback_data}'))
+    back_to_search_order.add(InlineKeyboardButton(text='🔙Назад', callback_data='search_order'))
+
+    return back_to_search_order
 
 async def generate_confirm_buttons(entity_type: str):
     confirm_delete = InlineKeyboardMarkup()
@@ -58,35 +94,27 @@ close4 = InlineKeyboardMarkup()
 close4.add(InlineKeyboardButton(text='🔙Назад', callback_data='close_callback2'))
 
 
-async def generate_orders_text_and_markup(orders_page, page, total_pages, is_sorted=False, is_month=False,
-                                          month_number=0):
+async def generate_orders_text_and_markup(
+    orders_page, page, total_pages, is_sorted=False, is_month=False, month_number=0
+):
     orders_text = ""
     for order in orders_page:
         route = get_route_by_id(order[5])
-        phone = order[8].replace('https://wa.me/', '')
 
-        orders_text += "📝 <b>Информация о заказе</b>\n"
-        orders_text += "━━━━━━━━━━━━━━━━━━━━\n\n"
-        orders_text += f"📌 <b>ID заказа:</b> {order[0]}\n"
-        orders_text += f"⚡️ <b>Дата приезда:</b> {order[1]}\n"
-        orders_text += f"⏰️ <b>Время приезда:</b> {order[2]}\n"
-        orders_text += f"⚡️ <b>Дата выезда:</b> {order[3]}\n"
-        orders_text += f"⏰️ <b>Время выезда:</b> {order[4]}\n"
-        orders_text += f"🗺 <b>Маршрут:</b> {route['name']}\n"
-        orders_text += f"📈 <b>Количество катамаранов:</b> {order[6]}\n"
-        orders_text += f"🤵 <b>ФИО:</b> {order[7]}\n"
-        orders_text += f"📞 <b>Телефон:</b><a href='{order[8]}'> +{phone}</a>\n"
-        orders_text += f"💰 <b>Цена заказа:</b> {order[9]} ₽\n"
+        single_order_text = await info_order_text(
+            order_id=order[0],
+            date_arrival=order[1],
+            time_arrival=order[2],
+            date_departure=order[3],
+            time_departure=order[4],
+            route_id=route,
+            customer_name=order[6],
+            phone_link=order[7],
+            additional_wishes=order[9],
+            status=order[8]
+        )
 
-        if order[10] == "" or order[10] is None or order[10] == " " or order[10] == '.':
-            orders_text += "\n"
-        else:
-            orders_text += f"📗 <b>Дополнительные пожелания:</b> {order[10]}\n"
-        if order[11]:
-            orders_text += "✅ <b>Статус:</b> Подтверждён!\n\n"
-        else:
-            orders_text += "❌ <b>Статус:</b> Не подтверждён!\n\n"
-        orders_text += "━━━━━━━━━━━━━━━━━━━━\n"
+        orders_text += single_order_text
 
     markup = InlineKeyboardMarkup(row_width=2)
     buttons = []
@@ -99,7 +127,7 @@ async def generate_orders_text_and_markup(orders_page, page, total_pages, is_sor
             f"_month_{month_number}" if is_month else "")
         buttons.append(InlineKeyboardButton("Вперед >>", callback_data=next_button_data))
     markup.add(*buttons)
-    markup.add(InlineKeyboardButton("🔙 Назад", callback_data="sort_month_order"))
+    markup.add(InlineKeyboardButton("🔙 Назад", callback_data="search_order"))
 
     return orders_text, markup
 
@@ -118,38 +146,48 @@ async def info_order_text(
 ):
     status_text = "✅ <b>Аванс:</b> Внесён!" if status else "❌ <b>Аванс:</b> Не внесён!"
 
-    wishes_text = ""
-    if additional_wishes and additional_wishes.strip() not in ["", ".", " "]:
-        wishes_text = f"📗 <b>Дополнительные пожелания:</b> {additional_wishes}\n"
-
-    # Форматируем телефон с кликабельной ссылкой
     phone = phone_link.replace('https://wa.me/', '')
 
+    wishes_clean = (additional_wishes or "").strip().lower()
+    wishes_text = ""
+    if wishes_clean not in ["", ".", " ", "0", "нету", "none"]:
+        wishes_text = f"📗 <b>Дополнительные пожелания:</b> {additional_wishes}\n"
+
+    # Получение количества услуг
     catamarans = (await get_catamaran_quantity(order_id) or [0])[0]
     transfers = (await get_transfer_quantity(order_id) or [0])[0]
     supboards = (await get_supboard_quantity(order_id) or [0])[0]
 
+    # Получение цен
     catamarans_price = (await get_catamaran_price(order_id) or [0])[0]
     transfers_price = (await get_transfer_price(order_id) or [0])[0]
     supboards_price = (await get_supboard_price(order_id) or [0])[0]
 
-    transfer_route_id = (await get_transfer_route_id(order_id) or ['Маршрута нету'])[0]
+    price = catamarans_price + transfers_price + supboards_price
 
+    # Получение маршрута трансфера
+    transfer_route_id = (await get_transfer_route_id(order_id) or ['Маршрута нету'])[0]
     try:
         route_transfer = await get_route_by_id(transfer_route_id)
     except:
         route_transfer = {'name': 'Маршрута нету'}
 
-    price = catamarans_price + transfers_price + supboards_price
+    # Формирование блока услуг
+    services_parts = []
+    if catamarans > 0:
+        services_parts.append(f"🛶 <b>Катамаранов:</b> {catamarans}")
+    if transfers > 0:
+        services_parts.append(f"🚐 <b>Трансферов:</b> {transfers}")
+    if supboards > 0:
+        services_parts.append(f"🏄 <b>Сапбордов:</b> {supboards}")
+    if price > 0:
+        services_parts.append(f"💰 <b>Цена:</b> {price}₽")
 
-    services_text = (
-        f"🛶 <b>Катамаранов:</b> {catamarans}\n"
-        f"🚐 <b>Трансферов:</b> {transfers}\n"
-        f"🏄 <b>Сапбордов:</b> {supboards}\n"
-        f"💰 <b>Цена:</b> {price}₽\n"
-    )
+    services_text = ""
+    if services_parts:
+        services_text = "\n" + "\n".join(services_parts) + "\n"
 
-    # Собираем полный текст
+    # Собираем финальный текст
     return (
         f"📝 <b>Информация о заказе</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -161,12 +199,11 @@ async def info_order_text(
         f"🗺 <b>Маршрут:</b> {route_id['name']}\n"
         f"🗺 <b>Маршрут для трансфера:</b> {route_transfer['name']}\n"
         f"🤵 <b>ФИО:</b> {customer_name}\n"
-        f"📞 <b>Телефон:</b><a href='{phone_link}'> +{phone}</a>\n"
-        f"{wishes_text}\n"
-
+        f"📞 <b>Телефон:</b> <a href='https://wa.me/{phone}'>+{phone}</a>\n"
+        f"{wishes_text}"
         f"{services_text}"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
         f"{status_text}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
     )
 
 
@@ -197,6 +234,26 @@ async def info_supboard_text(
         f"📌 <b>ID заказа:</b> {supboard_id}\n"
         f"🚤 <b>Количество SUP-бордов:</b> {quantity}\n"
         f"💸 <b>Цена:</b> {price}\n"
+    )
+
+async def info_transfer_text(
+    order_id: int,
+    price,
+    quantity,
+    vehicle_type,
+    driver_included,
+    route_id,
+    transfer_id
+):
+    return (
+        f"📝 <b>Информация о трансфере в заказе {order_id}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📌 <b>ID трансфера:</b> {transfer_id}\n"
+        f"🚗 <b>Тип транспорта:</b> {vehicle_type}\n"
+        f"👥 <b>Количество пассажиров:</b> {quantity}\n"
+        f"💸 <b>Цена:</b> {price}\n"
+        f"🧭 <b>ID маршрута:</b> {route_id}\n"
+        f"👨‍✈️ <b>Водитель включён:</b> {'Да' if driver_included else 'Нет'}\n"
     )
 
 

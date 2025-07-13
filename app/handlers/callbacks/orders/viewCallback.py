@@ -1,11 +1,12 @@
 from aiogram import types
+
 from app import keyboard
-from app.database.Models import catamaran
+from app.database.Models.order import get_orders
 
 
 async def view_catamarans(callback: types.CallbackQuery):
     page = 1
-    orders = await catamaran.get_orders()
+    orders = await get_orders()
     total_pages = (len(orders) + 4) // 5
     start_index = (page - 1) * 5
     end_index = start_index + 5

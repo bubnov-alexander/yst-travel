@@ -1,6 +1,8 @@
 from aiogram import types
+
 from app import keyboard
-from app.database.Models import catamaran
+from app.database.Models.order import get_orders, sort_date_orders
+
 
 async def prev_page(callback: types.CallbackQuery):
     page = int(callback.data.split("_")[2])
@@ -8,17 +10,17 @@ async def prev_page(callback: types.CallbackQuery):
     is_month = "month" in callback.data
 
     if is_sorted:
-        orders = await catamaran.sort_date_catamaran()
+        orders = await sort_date_orders()
     elif is_month:
         month_number = int(callback.data.split("_")[4])
-        orders = await catamaran.sort_date_catamaran()
+        orders = await sort_date_orders()
         filtered_orders = []
         for order in orders:
-            if int(order[5].split('.')[1]) == month_number:
+            if int(order[1].split('.')[1]) == month_number:
                 filtered_orders.append(order)
         orders = filtered_orders
     else:
-        orders = await catamaran.get_orders()
+        orders = await get_orders()
 
     total_pages = (len(orders) + 4) // 5
     start_index = (page - 1) * 5
@@ -27,8 +29,14 @@ async def prev_page(callback: types.CallbackQuery):
 
     if orders_page:
         orders_text, markup = await keyboard.generate_orders_text_and_markup(orders_page, page, total_pages, is_sorted)
-        await callback.bot.edit_message_text(chat_id=callback.message.chat.id, message_id=callback.message.message_id,
-                                    text=orders_text, reply_markup=markup, parse_mode='HTML')
+        await callback.bot.edit_message_text(
+            chat_id=callback.message.chat.id,
+            message_id=callback.message.message_id,
+            text=orders_text,
+            reply_markup=markup,
+            parse_mode='HTML',
+            disable_web_page_preview=True,
+        )
 
 
 async def next_page(callback: types.CallbackQuery):
@@ -39,16 +47,16 @@ async def next_page(callback: types.CallbackQuery):
     month_number = 0
 
     if is_sorted:
-        orders = await catamaran.sort_date_catamaran()
+        orders = await sort_date_orders()
     elif is_month:
         month_number = int(callback.data.split("_")[4])
-        orders = await catamaran.sort_date_catamaran()
+        orders = await sort_date_orders()
         filtered_orders = []
         for order in orders:
             if int(order[1].split('.')[1]) == month_number:
                 filtered_orders.append(order)
     else:
-        orders = await catamaran.get_orders()
+        orders = await get_orders()
 
     total_pages = (len(orders) + 4) // 5
     page += 1
@@ -58,7 +66,7 @@ async def next_page(callback: types.CallbackQuery):
 
     if orders_page:
         orders_text, markup = await keyboard.generate_orders_text_and_markup(orders_page, page, total_pages, is_sorted,
-                                                                       is_month, month_number)
+                                                                             is_month, month_number)
         await callback.bot.edit_message_text(
             chat_id=callback.message.chat.id,
             message_id=callback.message.message_id,
@@ -68,8 +76,10 @@ async def next_page(callback: types.CallbackQuery):
             disable_web_page_preview=True
         )
 
+
 def register_callback_query_view_next_page_catamarans(dp):
     dp.register_callback_query_handler(next_page, lambda c: c.data.startswith('next_page_'))
+
 
 def register_callback_query_view_back_page_catamarans(dp):
     dp.register_callback_query_handler(prev_page, lambda c: c.data.startswith('prev_page_'))

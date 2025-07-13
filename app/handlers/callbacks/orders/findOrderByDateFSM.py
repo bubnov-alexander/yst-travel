@@ -1,13 +1,17 @@
+import datetime as dt
+
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
-from app.database.Models import catamaran
 from app import keyboard as kb
-import datetime as dt
+from app.database.Models.order import get_order_by_date
+from app.database.Models.route import get_route_by_id
+
 
 class FindOrderByDate(StatesGroup):
     search_order_by_date = State()
+
 
 def register_find_order_by_date_handlers(dp, bot):
     @dp.callback_query_handler(text='search_date_order')
@@ -29,19 +33,33 @@ def register_find_order_by_date_handlers(dp, bot):
 
         if date is None:
             await message.answer('❌ Дата должна быть в формате ДД.ММ.ГГ или ДД.ММ.ГГГГ', reply_markup=kb.close2)
-            await state.finish()
             return
 
-        db_date = await catamaran.get_catamaran_by_date(date)
+        db_date = await get_order_by_date(date)
         if db_date:
             text = ''
-            for i in db_date:
-                text += await kb.info_order_text(i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11])
+            for order in db_date:
+                route = get_route_by_id(order[5])
+
+                text += await kb.info_order_text(
+                    order_id=order[0],
+                    date_arrival=order[1],
+                    time_arrival=order[2],
+                    date_departure=order[3],
+                    time_departure=order[4],
+                    route_id=route,
+                    customer_name=order[6],
+                    phone_link=order[7],
+                    additional_wishes=order[9],
+                    status=order[8])
+
+            buttons = await kb.generate_buttons_for_search('search_date_order')
+
             await message.answer(
                 text=text,
-                reply_markup=kb.back_to_search_order,
-                parse_mode = 'HTML',
-                disable_web_page_preview = True
+                reply_markup=buttons,
+                parse_mode='HTML',
+                disable_web_page_preview=True
             )
         else:
             await message.answer('❌ Заказ не найден.', reply_markup=kb.sort_orders)

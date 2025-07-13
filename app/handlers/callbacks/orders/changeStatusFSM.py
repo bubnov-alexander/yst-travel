@@ -24,7 +24,7 @@ def register_change_status_catamaran_handlers(dp, bot):
         order = await get_order_by_id(order_id)
         if order:
             route = get_route_by_id(order[5])
-            await change_status_order(order_id)
+            change_status_order(order_id)
             text = await kb.info_order_text(
                     order_id=order[0],
                     date_arrival=order[1],

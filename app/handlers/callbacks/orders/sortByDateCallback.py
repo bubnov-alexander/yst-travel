@@ -1,11 +1,12 @@
 from aiogram import types
+
 from app import keyboard
-from app.database.Models import catamaran
+from app.database.Models.order import get_orders, sort_date_orders
 
 
 async def sort_date_catamaran(callback: types.CallbackQuery):
     page = 1
-    orders = await catamaran.sort_date_catamaran()
+    orders = await sort_date_orders()
     total_pages = (len(orders) + 4) // 5
     start_index = (page - 1) * 5
     end_index = start_index + 5
@@ -24,20 +25,20 @@ async def sort_date_catamaran(callback: types.CallbackQuery):
 
 
 async def sort_by_month(callback: types.CallbackQuery):
-    orders = await catamaran.get_orders()
+    orders = await get_orders()
 
-    month = callback.data.split('_')[2]
+    month_name = callback.data.split('_')[2]
     month_number = None
 
-    if month == 'may':
+    if month_name == 'may':
         month_number = 5
-    elif month == 'june':
+    elif month_name == 'june':
         month_number = 6
-    elif month == 'july':
+    elif month_name == 'july':
         month_number = 7
-    elif month == 'august':
+    elif month_name == 'august':
         month_number = 8
-    elif month == 'september':
+    elif month_name == 'september':
         month_number = 9
 
     if month_number is not None:
@@ -56,12 +57,12 @@ async def sort_by_month(callback: types.CallbackQuery):
             await callback.bot.edit_message_text(
                 chat_id=callback.message.chat.id,
                 message_id=callback.message.message_id,
-                text='В этом месяце нет заказов',
+                text=f'В {month_name} нет заказов',
                 reply_markup=keyboard.months
             )
         else:
             page = 1
-            orders = await catamaran.sort_date_catamaran()
+            orders = await sort_date_orders()
             orders = [order for order in orders if int(order[1].split('.')[1]) == month_number]
             total_pages = (len(orders) + 4) // 5
             start_index = (page - 1) * 5
