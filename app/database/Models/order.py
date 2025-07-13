@@ -1,26 +1,15 @@
-import sqlite3
 import datetime
 import logging
+import sqlite3
 
 from app.database.Models.catamaran import get_catamaran_quantity
+from app.database.Models.settings import get_service_counts
 from app.database.Models.supboaed import get_supboard_quantity
 
 logger = logging.getLogger(__name__)
 
-TOTAL_CATAMARANS = 16
-TOTAL_SUPBOARDS = 20
-TOTAL_TRANSFER_VEHICLES = 5
-
 
 async def check_availability(date_start, date_end, requested, order_id=None):
-    """
-    Проверяет доступность ресурсов:
-    :param date_start: дата начала в формате 'дд.мм.гггг'
-    :param date_end: дата окончания в формате 'дд.мм.гггг'
-    :param requested: dict с ключами catamarans, supboards, transfers
-    :param order_id: если редактируется заказ — исключить его из проверок
-    :return: (можно_забронировать, минимальное_оставшееся_значение_по_каждому_ресурсу)
-    """
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
 
@@ -35,12 +24,17 @@ async def check_availability(date_start, date_end, requested, order_id=None):
         'transfers': {}
     }
 
+    counts = get_service_counts()
+
+    TOTAL_CATAMARANS = int(counts["catamaran"])
+    TOTAL_SUPBOARDS = int(counts["supboard"])
+    TOTAL_TRANSFER_VEHICLES = int(counts["transfer"])
+
     for single_date in (requested_start + datetime.timedelta(n) for n in range(days_count)):
         availability['catamarans'][single_date] = TOTAL_CATAMARANS
         availability['supboards'][single_date] = TOTAL_SUPBOARDS
         availability['transfers'][single_date] = TOTAL_TRANSFER_VEHICLES
 
-    # Получаем все заказы
     all_orders = get_all_order()
 
     for order in all_orders:
@@ -83,6 +77,10 @@ async def check_availability(date_start, date_end, requested, order_id=None):
         'transfers': min(availability['transfers'].values()) if availability['transfers'] else 0,
     }
 
+    if all(value == 0 for value in remaining.values()):
+        database.close()
+        return False, remaining
+
     database.close()
     return can_book, remaining
 
@@ -96,34 +94,34 @@ def get_all_order():
     database.close()
     return result
 
+
 async def add_new_order(
-    date_arrival,
-    date_departure,
-    time_arrival,
-    time_departure,
-    route_id,
-    customer_name,
-    phone,
-    additional_wishes,
-    prepayment_status
+        date_arrival,
+        date_departure,
+        time_arrival,
+        time_departure,
+        route_id,
+        customer_name,
+        phone,
+        additional_wishes,
+        prepayment_status
 ):
     try:
         conn = sqlite3.connect('app/storage/database.db')
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO orders (
-                date_arrival, date_departure,
-                time_arrival, time_departure,
-                route_id, customer_name, phone,
-                prepayment_status, additional_wishes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            date_arrival, date_departure,
-            time_arrival, time_departure,
-            route_id, customer_name, phone,
-            prepayment_status, additional_wishes
-        ))
+                       INSERT INTO orders (date_arrival, date_departure,
+                                           time_arrival, time_departure,
+                                           route_id, customer_name, phone,
+                                           prepayment_status, additional_wishes)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                       """, (
+                           date_arrival, date_departure,
+                           time_arrival, time_departure,
+                           route_id, customer_name, phone,
+                           prepayment_status, additional_wishes
+                       ))
 
         order_id = cursor.lastrowid
         conn.commit()
@@ -134,6 +132,7 @@ async def add_new_order(
     except Exception as e:
         logger.error("[add_order] Ошибка при добавлении заказа: ", e)
         return False
+
 
 async def edit_order(
         date_arrival, date_departure, time_arrival, time_departure,
@@ -166,6 +165,7 @@ async def edit_order(
 
     logger.info(f"📝 Заказ успешно изменён (ID: {order_id})")
 
+
 async def get_order_by_id(order_id: int):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
@@ -176,6 +176,7 @@ async def get_order_by_id(order_id: int):
 
     return order
 
+
 async def delete_order_by_id(transfer_id: int):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
@@ -183,6 +184,7 @@ async def delete_order_by_id(transfer_id: int):
     cursor.execute("DELETE FROM orders WHERE id = ?", (transfer_id,))
     database.commit()
     database.close()
+
 
 def change_status_order(order_id):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
@@ -196,6 +198,7 @@ def change_status_order(order_id):
 
     return status[0]
 
+
 async def get_orders():
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
@@ -205,6 +208,7 @@ async def get_orders():
 
     return orders
 
+
 async def get_order_by_date(date):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
     cursor = database.cursor()
@@ -213,6 +217,7 @@ async def get_order_by_date(date):
     orders = cursor.fetchall()
 
     return orders
+
 
 async def sort_date_orders():
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)
@@ -225,6 +230,7 @@ async def sort_date_orders():
     if isinstance(x[1], str) else datetime.datetime.now())
 
     return orders_sorted
+
 
 async def get_orders_with_catamarans_sorted(service):
     database = sqlite3.connect('app/storage/database.db', check_same_thread=False, timeout=7)

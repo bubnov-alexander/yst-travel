@@ -8,6 +8,7 @@ from app.database.Migrations import migration
 from app.handlers.callbacks.catamarans.addFSM import register_add_catamaran_handlers
 from app.handlers.callbacks.catamarans.deleteFSM import register_delete_catamaran_handlers
 from app.handlers.callbacks.catamarans.editFSM import register_edit_catamaran_handlers
+from app.handlers.callbacks.settings import register_settings_handlers
 from app.handlers.callbacks.sortByDate import register_selection_of_sorts_by_date
 from app.handlers.callbacks.orders.findOrderByDateFSM import register_find_order_by_date_handlers
 from app.handlers.callbacks.getSortsByDate import register_get_buttons_selection_of_sorts
@@ -36,6 +37,7 @@ from app.handlers.callbacks.supboards.editFSM import register_edit_supboard_hand
 from app.handlers.callbacks.transfers.addFSM import register_add_transfer_handlers
 from app.handlers.callbacks.transfers.deleteFSM import register_delete_transfer_handlers
 from app.handlers.callbacks.transfers.editFSM import register_edit_transfer_handlers
+from app.handlers.callbacks.users.adminFSM import register_handle_add_admin, register_handle_delete_admin
 from app.handlers.commands.getChatIdCommand import register_handlers_get_group_id
 from app.handlers.commands.startCommand import register_handlers_start
 from app.utils.logger import logger
@@ -104,5 +106,9 @@ if __name__ == '__main__':
 
     dp.middleware.setup(CallbackLoggerMiddleware())
     dp.middleware.setup(MessageLoggerMiddleware())
+
+    register_handle_delete_admin(dp)
+    register_handle_add_admin(dp)
+    register_settings_handlers(dp)
 
     executor.start_polling(dp, on_startup=on_startup, skip_updates=True)

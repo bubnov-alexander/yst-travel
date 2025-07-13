@@ -11,23 +11,7 @@ main.add(InlineKeyboardButton(text="Добавить заказ", callback_data=
          InlineKeyboardButton(text="Изменить заказ", callback_data="edit_order"),
          InlineKeyboardButton(text="Поменять статус", callback_data="status_order"))
 main.add(InlineKeyboardButton(text='Excel таблица', callback_data='excel'))
-
-# def get_main_menu(user_role: str) -> InlineKeyboardMarkup:
-#     main = InlineKeyboardMarkup(row_width=3)
-#
-#     main.add(
-#         InlineKeyboardButton(text="Добавить заказ", callback_data="add_order"),
-#         InlineKeyboardButton(text="Просмотр заказов", callback_data="search_order"),
-#         InlineKeyboardButton(text="Изменить заказ", callback_data="edit_order"),
-#         InlineKeyboardButton(text="Поменять статус", callback_data="status_order")
-#     )
-#
-#     main.add(InlineKeyboardButton(text='Excel таблица', callback_data='excel'))
-#
-#     if user_role == 'superadmin':
-#         main.add(InlineKeyboardButton(text='⚙ Настройки', callback_data='settings'))
-#
-#     return main
+main.add(InlineKeyboardButton(text='⚙ Настройки', callback_data='settings'))
 
 sort_orders = InlineKeyboardMarkup(row_width=1)
 sort_orders.add(
@@ -40,13 +24,29 @@ sort_orders.add(
     InlineKeyboardButton(text="🔙Назад", callback_data="close_callback")
 )
 
+admin_settings = InlineKeyboardMarkup(row_width=2)
+admin_settings.add(
+    InlineKeyboardButton("➕ Добавить", callback_data="add_admin"),
+    InlineKeyboardButton("➖ Удалить", callback_data="remove_admin"),
+    InlineKeyboardButton("🔙 Назад", callback_data="settings")
+)
+
+settings_buttons = InlineKeyboardMarkup(row_width=2)
+settings_buttons.add(
+    InlineKeyboardButton(text="🏄 Услуги SUP-бордов", callback_data="change_database_supboard_services"),
+    InlineKeyboardButton(text="🚐 Услуги трансфера", callback_data="change_database_transfer_services"),
+    InlineKeyboardButton(text="⛵ Услуги катамаранов", callback_data="change_database_catamaran_services"),
+    InlineKeyboardButton(text="👤 Управление администраторами", callback_data="change_database_admin"),
+    InlineKeyboardButton(text="🔙 Назад", callback_data="close_callback")
+)
+
 yes_no_kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="Да"), KeyboardButton(text="Нет")],
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
+    keyboard=[
+        [KeyboardButton(text="Да"), KeyboardButton(text="Нет")],
+    ],
+    resize_keyboard=True,
+    one_time_keyboard=True
+)
 
 selection_of_sorts = InlineKeyboardMarkup(row_width=1)
 selection_of_sorts.add(
@@ -74,12 +74,14 @@ close_replay_callback = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keybo
 close_replay_callback.add(KeyboardButton(text='Отменить'),
                           KeyboardButton(text='Пропустить'))
 
+
 async def generate_buttons_for_search(callback_data):
     back_to_search_order = InlineKeyboardMarkup(row_width=1)
     back_to_search_order.add(InlineKeyboardButton(text='Повторить поиск', callback_data=f'{callback_data}'))
     back_to_search_order.add(InlineKeyboardButton(text='🔙Назад', callback_data='search_order'))
 
     return back_to_search_order
+
 
 async def generate_confirm_buttons(entity_type: str):
     confirm_delete = InlineKeyboardMarkup()
@@ -95,7 +97,7 @@ close4.add(InlineKeyboardButton(text='🔙Назад', callback_data='close_call
 
 
 async def generate_orders_text_and_markup(
-    orders_page, page, total_pages, is_sorted=False, is_month=False, month_number=0
+        orders_page, page, total_pages, is_sorted=False, is_month=False, month_number=0
 ):
     orders_text = ""
     for order in orders_page:
@@ -236,14 +238,15 @@ async def info_supboard_text(
         f"💸 <b>Цена:</b> {price}\n"
     )
 
+
 async def info_transfer_text(
-    order_id: int,
-    price,
-    quantity,
-    vehicle_type,
-    driver_included,
-    route_id,
-    transfer_id
+        order_id: int,
+        price,
+        quantity,
+        vehicle_type,
+        driver_included,
+        route_id,
+        transfer_id
 ):
     return (
         f"📝 <b>Информация о трансфере в заказе {order_id}</b>\n"
