@@ -1,0 +1,15 @@
+[Unit]
+Description=Telegram bot 'yst-travel-crm'
+After=syslog.target
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/project/yst-travel/
+ExecStart=/usr/bin/python3 /root/project/yst-travel/main.py
+RestartSec=10
+Restart=always
+ 
+[Install]
+WantedBy=multi-user.target

@@ -11,6 +11,7 @@ main.add(InlineKeyboardButton(text="Добавить заказ", callback_data=
          InlineKeyboardButton(text="Изменить заказ", callback_data="edit_order"),
          InlineKeyboardButton(text="Поменять статус", callback_data="status_order"))
 main.add(InlineKeyboardButton(text='Excel таблица', callback_data='excel'))
+main.add(InlineKeyboardButton(text='Выгрузить логи', callback_data='logs'))
 main.add(InlineKeyboardButton(text='⚙ Настройки', callback_data='settings'))
 
 sort_orders = InlineKeyboardMarkup(row_width=1)

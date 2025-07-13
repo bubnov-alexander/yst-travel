@@ -8,6 +8,7 @@ from app.database.Migrations import migration
 from app.handlers.callbacks.catamarans.addFSM import register_add_catamaran_handlers
 from app.handlers.callbacks.catamarans.deleteFSM import register_delete_catamaran_handlers
 from app.handlers.callbacks.catamarans.editFSM import register_edit_catamaran_handlers
+from app.handlers.callbacks.logsCallback import register_callback_query_logs
 from app.handlers.callbacks.settings import register_settings_handlers
 from app.handlers.callbacks.sortByDate import register_selection_of_sorts_by_date
 from app.handlers.callbacks.orders.findOrderByDateFSM import register_find_order_by_date_handlers
@@ -110,5 +111,7 @@ if __name__ == '__main__':
     register_handle_delete_admin(dp)
     register_handle_add_admin(dp)
     register_settings_handlers(dp)
+
+    register_callback_query_logs(dp)
 
     executor.start_polling(dp, on_startup=on_startup, skip_updates=True)
